@@ -18,63 +18,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final Set<Marker> _markers = {};
   final ApiService _apiService = ApiService();
 
-  bool _isLoading = true;
-  late CameraPosition _initialCameraPosition;
-
   @override
   void initState() {
     super.initState();
-    _determineInitialPosition();
     _fetchParkingSpots();
-  }
-
-  Future<void> _determineInitialPosition() async {
-    LocationPermission permission;
-    bool serviceEnabled;
-    LatLng initialLatLng = _nycCenter; // Default to NYC
-
-    try {
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        // Location services are disabled. We'll use the default NYC location.
-        debugPrint('Location services are disabled.');
-        return;
-      }
-
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          // Permissions are denied. We'll use the default NYC location.
-          debugPrint('Location permissions are denied.');
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        // Permissions are permanently denied. We'll use the default NYC location.
-        debugPrint('Location permissions are permanently denied.');
-        return;
-      }
-
-      // If we reach here, permissions are granted.
-      final position = await Geolocator.getCurrentPosition();
-      initialLatLng = LatLng(position.latitude, position.longitude);
-    } catch (e) {
-      debugPrint("Error determining initial position: $e");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _initialCameraPosition = CameraPosition(
-            target: initialLatLng,
-            zoom: initialLatLng == _nycCenter
-                ? 11.0
-                : 14.0, // Zoom in more if it's user location
-          );
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   void _fetchParkingSpots() async {
@@ -109,33 +56,70 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     }
   }
 
+  Future<void> _requestLocationAndMoveCamera() async {
+    LocationPermission permission;
+    bool serviceEnabled;
+
+    try {
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('Location services are disabled.');
+        return;
+      }
+
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('Location permissions are denied.');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('Location permissions are permanently denied.');
+        return;
+      }
+
+      // If we reach here, permissions are granted.
+      final position = await Geolocator.getCurrentPosition();
+      _mapController.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(position.latitude, position.longitude),
+          14.0,
+        ),
+      );
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+    }
+  }
+
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
+    _requestLocationAndMoveCamera();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('NYC Bike Parking')),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: _initialCameraPosition,
-              markers: _markers,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-              clusterManagers: {
-                ClusterManager(
-                  clusterManagerId: const ClusterManagerId('parking-spots'),
-                  onClusterTap: (cluster) {
-                    _mapController.animateCamera(
-                      CameraUpdate.newLatLngZoom(cluster.position, 14),
-                    );
-                  },
-                ),
-              },
-            ),
+      body: GoogleMap(
+        onMapCreated: _onMapCreated,
+        initialCameraPosition: CameraPosition(target: _nycCenter, zoom: 11.0),
+        markers: _markers,
+        myLocationEnabled: true,
+        myLocationButtonEnabled: true,
+        clusterManagers: {
+          ClusterManager(
+            clusterManagerId: const ClusterManagerId('parking-spots'),
+            onClusterTap: (cluster) {
+              _mapController.animateCamera(
+                CameraUpdate.newLatLngZoom(cluster.position, 14),
+              );
+            },
+          ),
+        },
+      ),
     );
   }
 }
