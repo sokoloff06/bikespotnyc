@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'api_service.dart';
+import 'parking_spot.dart';
 
 class ParkingSpotDetails extends StatelessWidget {
   final ParkingSpot parkingSpot;

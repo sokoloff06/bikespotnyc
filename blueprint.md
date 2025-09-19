@@ -8,6 +8,7 @@ This document outlines the plan for creating a Flutter application that displays
 ## Features
 
 *   **Interactive Map:** Users will see a map of NYC with markers indicating bicycle parking locations.
+*   **Marker Clustering:** To improve performance and readability, markers will be clustered together at higher zoom levels.
 *   **Data Caching:** The application will cache the parking data to provide a faster experience and reduce API usage. Data will be refreshed periodically.
 *   **Detailed Information:** Tapping on a parking marker will display more information about that location.
 
@@ -15,7 +16,7 @@ This document outlines the plan for creating a Flutter application that displays
 
 *   **State Management:** Provider for managing the state of the parking data.
 *   **Data Fetching:** The `http` package will be used to make requests to the NYC OpenData API.
-*   **Mapping:** The `google_maps_flutter` package will be used to display the interactive map.
+*   **Mapping:** The `google_maps_flutter` package will be used to display the interactive map and handle marker clustering.
 *   **Caching:** The `shared_preferences` package will be used to store the data locally.
 
 ## Plan
@@ -26,6 +27,7 @@ This document outlines the plan for creating a Flutter application that displays
 4.  **Create the map screen:**
     *   Set up the Google Map widget.
     *   Fetch the parking data using the API service.
+    *   Implement marker clustering using the official Google Maps Flutter package.
     *   Display the parking locations as markers on the map.
 5.  **Develop the main application:**
     *   Set up the main application widget.
