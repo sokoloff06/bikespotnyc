@@ -31,8 +31,8 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-#      - name: Build Android APK
-#        run: flutter build apk --split-per-abi # Or flutter build appbundle for AAB
+      - name: Build Android APK
+        run: flutter build appbundle
 
       - name: Build and Sign Release AAB
         uses: r0adkll/sign-android-release@v1
