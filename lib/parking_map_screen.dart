@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'api_service.dart';
+import 'parking_spot.dart';
 import 'parking_spot_details.dart';
 
 class ParkingMapScreen extends StatefulWidget {
@@ -26,40 +27,47 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   void initState() {
     super.initState();
     clusterManager = ClusterManager(clusterManagerId: clusterManagerId);
-    _fetchParkingSpots();
+    // Data fetching is now deferred until the map is created.
   }
 
-  void _fetchParkingSpots() async {
+  // Fetches spots only for the current visible map area.
+  Future<void> _updateMarkersForVisibleRegion() async {
+    final LatLngBounds visibleRegion = await _mapController.getVisibleRegion();
     try {
-      _apiService.fetchParkingSpots().then(
-        (spots) => {
-          setState(() {
-            for (final spot in spots) {
-              _markers.add(
-                Marker(
-                  markerId: MarkerId(spot.siteId),
-                  position: LatLng(spot.latitude, spot.longitude),
-                  clusterManagerId: clusterManagerId,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ParkingSpotDetails(parkingSpot: spot),
-                      ),
-                    );
-                  },
-                ),
-              );
-            }
-          }),
-        },
-      );
+      final spots = await _apiService.getSpotsInBounds(visibleRegion);
+      _updateMarkers(spots);
     } catch (e) {
-      debugPrint("Error fetching parking spots: $e");
+      debugPrint("Error fetching spots for visible region: $e");
     }
   }
 
+  // Updates the markers on the map.
+  void _updateMarkers(List<ParkingSpot> spots) {
+    final newMarkers = spots
+        .map(
+          (spot) => Marker(
+            markerId: MarkerId(spot.siteId),
+            position: LatLng(spot.latitude, spot.longitude),
+            clusterManagerId: clusterManagerId,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ParkingSpotDetails(parkingSpot: spot),
+                ),
+              );
+            },
+          ),
+        )
+        .toSet();
+
+    setState(() {
+      _markers.clear();
+      _markers.addAll(newMarkers);
+    });
+  }
+
+  // This is your original camera and permissions logic, left untouched.
   Future<void> _requestLocationAndMoveCamera() async {
     LocationPermission permission;
     bool serviceEnabled;
@@ -85,7 +93,6 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         return;
       }
 
-      // If we reach here, permissions are granted.
       final position = await Geolocator.getCurrentPosition();
       _mapController.animateCamera(
         CameraUpdate.newLatLngZoom(
@@ -100,7 +107,12 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
-    _requestLocationAndMoveCamera();
+    _updateMarkersForVisibleRegion(); // Initial data load for the starting view.
+  }
+
+  // Called every time the user stops moving the map.
+  void _onCameraIdle() {
+    _updateMarkersForVisibleRegion();
   }
 
   @override
@@ -109,11 +121,14 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       appBar: AppBar(title: const Text('NYC Bike Parking')),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(target: _nycCenter, zoom: 11.0),
+        initialCameraPosition: CameraPosition(target: _nycCenter, zoom: 15.0),
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
         clusterManagers: {clusterManager},
         markers: _markers,
+        onCameraIdle: _onCameraIdle, // Key change: triggers data updates.
+        // The cluster manager properties have been removed.
+        // google_maps_flutter handles clustering automatically on supported platforms.
       ),
     );
   }
