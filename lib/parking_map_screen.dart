@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:myapp/api_service.dart';
-import 'package:provider/provider.dart';
+import 'api_service.dart';
+import 'parking_spot_details.dart';
 
 class ParkingMapScreen extends StatefulWidget {
   const ParkingMapScreen({super.key});
@@ -12,59 +11,64 @@ class ParkingMapScreen extends StatefulWidget {
 }
 
 class _ParkingMapScreenState extends State<ParkingMapScreen> {
-  late GoogleMapController _mapController;
-  final Map<MarkerId, Marker> _markers = <MarkerId, Marker>{};
-  String? _mapStyle;
-
-  static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(40.7128, -74.0060),
-    zoom: 12,
-  );
+  late GoogleMapController mapController;
+  final LatLng _center = const LatLng(40.7128, -74.0060);
+  final Set<Marker> _markers = {};
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _loadMapStyle();
-    _loadParkingSpots();
+    _fetchParkingSpots();
   }
 
-  Future<void> _loadMapStyle() async {
-    _mapStyle = await rootBundle.loadString('assets/map_style.json');
+  void _fetchParkingSpots() async {
+    try {
+      final spots = await _apiService.fetchParkingSpots();
+      setState(() {
+        for (final spot in spots) {
+          _markers.add(
+            Marker(
+              markerId: MarkerId('${spot.latitude}_${spot.longitude}'),
+              position: LatLng(spot.latitude, spot.longitude),
+              infoWindow: InfoWindow(
+                title: spot.location,
+                snippet: spot.borough,
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ParkingSpotDetails(parkingSpot: spot),
+                  ),
+                );
+              },
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      // Handle error
+    }
   }
 
-  Future<void> _loadParkingSpots() async {
-    final apiService = Provider.of<ApiService>(context, listen: false);
-    final spots = await apiService.fetchParkingSpots();
-
-    setState(() {
-      for (final spot in spots) {
-        final markerId = MarkerId('${spot.assetId}-${spot.latitude}-${spot.longitude}');
-        final marker = Marker(
-          markerId: markerId,
-          position: LatLng(spot.latitude, spot.longitude),
-          infoWindow: InfoWindow(
-            title: spot.location,
-            snippet: 'Borough: ${spot.borough}',
-          ),
-        );
-        _markers[markerId] = marker;
-      }
-    });
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NYC Bicycle Parking'),
+        title: const Text('NYC Bike Parking'),
       ),
       body: GoogleMap(
-        initialCameraPosition: _initialPosition,
-        onMapCreated: (GoogleMapController controller) {
-          _mapController = controller;
-          _mapController.setMapStyle(_mapStyle);
-        },
-        markers: Set<Marker>.of(_markers.values),
+        onMapCreated: _onMapCreated,
+        initialCameraPosition: CameraPosition(
+          target: _center,
+          zoom: 11.0,
+        ),
+        markers: _markers,
       ),
     );
   }

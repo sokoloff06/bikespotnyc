@@ -33,8 +33,8 @@ class ParkingSpot {
 }
 
 class ApiService {
-  final String _url =
-      'https://data.cityofnewyork.us/resource/592z-n7dk.json?\$limit=1000';
+  final String _baseUrl =
+      'https://data.cityofnewyork.us/resource/592z-n7dk.json';
 
   Future<List<ParkingSpot>> fetchParkingSpots() async {
     final prefs = await SharedPreferences.getInstance();
@@ -43,15 +43,40 @@ class ApiService {
 
     // Fetch new data if cache is older than a day
     if (now - lastFetched > 24 * 60 * 60 * 1000) {
-      final response = await http.get(Uri.parse(_url));
-      if (response.statusCode == 200) {
-        await prefs.setString('parking_data', response.body);
-        await prefs.setInt('last_fetched_timestamp', now);
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => ParkingSpot.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load parking spots');
+      List<ParkingSpot> allSpots = [];
+      int offset = 0;
+      const int limit = 1000;
+      bool hasMoreData = true;
+
+      while (hasMoreData) {
+        final response = await http.get(Uri.parse('$_baseUrl?\$limit=$limit&\$offset=$offset'));
+        if (response.statusCode == 200) {
+          final List<dynamic> jsonList = json.decode(response.body);
+          if (jsonList.isEmpty) {
+            hasMoreData = false;
+          } else {
+            allSpots.addAll(jsonList.map((json) => ParkingSpot.fromJson(json)).toList());
+            if (jsonList.length < limit) {
+              hasMoreData = false;
+            } else {
+              offset += limit;
+            }
+          }
+        } else {
+          throw Exception('Failed to load parking spots');
+        }
       }
+
+      await prefs.setString('parking_data', json.encode(allSpots.map((spot) => {
+        'borough': spot.borough,
+        'asset_id': spot.assetId,
+        'location': spot.location,
+        'yr_install': spot.yrInstalled.toString(),
+        'latitude': spot.latitude.toString(),
+        'longitude': spot.longitude.toString(),
+      }).toList()));
+      await prefs.setInt('last_fetched_timestamp', now);
+      return allSpots;
     } else {
       final cachedData = prefs.getString('parking_data');
       if (cachedData != null) {
