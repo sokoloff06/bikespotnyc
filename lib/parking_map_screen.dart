@@ -154,6 +154,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         options: MapOptions(
           initialCenter: _nycCenter,
           initialZoom: 12.0,
+          interactionOptions: InteractionOptions(
+            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          ),
           onMapReady: () {
             _updateMarkers(_mapController.camera.visibleBounds);
           },

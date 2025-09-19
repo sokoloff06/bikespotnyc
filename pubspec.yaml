@@ -44,6 +44,7 @@ dependencies:
   path_provider: ^2.1.5
   flutter_map: ^8.2.1
   flutter_map_marker_cluster: ^8.1.0
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:
@@ -89,7 +90,7 @@ flutter:
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
   #   - family: Trajan Pro
-  #     fonts:
+  #     fonts
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
