@@ -89,7 +89,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     if (_currentPosition != null) {
       _mapController.move(
         LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-        _mapController.camera.zoom,
+        17.0,
+        // _mapController.camera.zoom,
       );
     }
   }
@@ -133,6 +134,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
       if (mounted) {
         setState(() {
+          print("Markers added");
           _markers = markers;
         });
       }
@@ -158,7 +160,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
           ),
           onMapReady: () {
-            _updateMarkers(_mapController.camera.visibleBounds);
+            print("Map is ready");
+            if (_debounce?.isActive ?? false) _debounce!.cancel();
+            _debounce = Timer(const Duration(milliseconds: 500), () {
+              _updateMarkers(_mapController.camera.visibleBounds);
+            });
           },
           onPositionChanged: (position, hasGesture) {
             if (_debounce?.isActive ?? false) _debounce!.cancel();
