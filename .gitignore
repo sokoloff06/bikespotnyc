@@ -1,0 +1,70 @@
+# Miscellaneous
+*.class
+*.iml
+*.jar
+*.log
+*.pyc
+*.pyo
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+/ios/Pods/
+/ios/Flutter/App.framework
+/ios/Flutter/engine
+/ios/Flutter/flutter_assets
+/ios/Flutter/Generated.xcconfig
+/ios/Runner/GeneratedPluginRegistrant.*
+/android/.gradle
+/android/local.properties
+/android/.idea/
+
+# Rider
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+bcs-control.cache
+bcs-control.cfg
+bcs-control.scc
+bcs-deploy.cfg
+
+# Visual Studio
+.vs/
+/xcuserdata/
+/DerivedData/
+*.hmap
+*.xccheckout
+*.xcscmblueprint
+/Pods/
+/public/
+/public/build
+/public/hot
+
+# Xcode
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+*.xcworkspace
+xcuserdata/
+.generated/
+DerivedData/
+.DS_Store
+build/
+
+# Other
+/screenshots/
+/coverage/
+pubspec.lock
