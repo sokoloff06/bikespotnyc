@@ -121,7 +121,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       appBar: AppBar(title: const Text('NYC Bike Parking')),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(target: _nycCenter, zoom: 30.0),
+        initialCameraPosition: CameraPosition(target: _nycCenter, zoom: 15.0),
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
         clusterManagers: {clusterManager},
