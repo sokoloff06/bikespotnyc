@@ -70,7 +70,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           _currentPosition = position;
         });
       }
-      _mapController.move(LatLng(position.latitude, position.longitude), 14.0);
+      // _mapController.move(LatLng(position.latitude, position.longitude), 14.0);
     } catch (e) {
       debugPrint("Error getting current position: $e");
     }
