@@ -22,21 +22,24 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final LatLng _nycCenter = LatLng(40.7128, -74.0060);
   List<Marker> _markers = [];
   Timer? _debounce;
+  Position? _currentPosition;
+  StreamSubscription<Position>? _positionStreamSubscription;
 
   @override
   void initState() {
     super.initState();
-    // _requestLocationAndMoveCamera();
+    _setupLocation();
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _mapController.dispose();
+    _positionStreamSubscription?.cancel();
     super.dispose();
   }
 
-  Future<void> _requestLocationAndMoveCamera() async {
+  Future<void> _setupLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -62,9 +65,33 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
     try {
       final position = await Geolocator.getCurrentPosition();
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+      }
       _mapController.move(LatLng(position.latitude, position.longitude), 14.0);
     } catch (e) {
       debugPrint("Error getting current position: $e");
+    }
+
+    _positionStreamSubscription = Geolocator.getPositionStream().listen((
+      position,
+    ) {
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+      }
+    });
+  }
+
+  void _centerOnUser() {
+    if (_currentPosition != null) {
+      _mapController.move(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        _mapController.camera.zoom,
+      );
     }
   }
 
@@ -119,12 +146,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('NYC Bike Parking (flutter_map)')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _centerOnUser,
+        child: const Icon(Icons.my_location),
+      ),
       body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(
           initialCenter: _nycCenter,
           initialZoom: 12.0,
-          // FIX: Add onMapReady to trigger the initial marker load.
           onMapReady: () {
             _updateMarkers(_mapController.camera.visibleBounds);
           },
@@ -161,6 +191,24 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               },
             ),
           ),
+          if (_currentPosition != null)
+            MarkerLayer(
+              markers: [
+                Marker(
+                  width: 80,
+                  height: 80,
+                  point: LatLng(
+                    _currentPosition!.latitude,
+                    _currentPosition!.longitude,
+                  ),
+                  child: const Icon(
+                    Icons.my_location,
+                    color: Colors.blueAccent,
+                    size: 40.0,
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
