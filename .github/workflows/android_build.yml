@@ -50,10 +50,9 @@ jobs:
           name: app-bundle
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
 
-
   deploy:
     name: Deploy to Play Store
-    needs: build
+    needs: build_android
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifact
