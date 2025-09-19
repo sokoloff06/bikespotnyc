@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -54,9 +53,8 @@ class ApiService {
     final int now = DateTime.now().millisecondsSinceEpoch;
     final int spotCount = await _getSpotCount();
 
-    // Key Change: Fetch if the database is empty OR if the data is stale.
     if (spotCount > 0 && (now - lastFetched <= 24 * 60 * 60 * 1000)) {
-      return; // Data is fresh and database is populated.
+      return;
     }
 
     List<ParkingSpot> fetchedSpots = [];
@@ -65,17 +63,15 @@ class ApiService {
     bool hasMoreData = true;
 
     while (hasMoreData) {
-      final response = await http.get(
-        Uri.parse('$_baseUrl?\$limit=$limit&\$offset=$offset'),
-      );
+      final response = await http
+          .get(Uri.parse('$_baseUrl?\$limit=$limit&\$offset=$offset'));
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
         if (jsonList.isEmpty || jsonList.length < limit) {
           hasMoreData = false;
         }
         fetchedSpots.addAll(
-          jsonList.map((json) => ParkingSpot.fromJson(json)).toList(),
-        );
+            jsonList.map((json) => ParkingSpot.fromJson(json)).toList());
         offset += limit;
       } else {
         throw Exception('Failed to load parking spots');
@@ -89,20 +85,30 @@ class ApiService {
     final db = await database;
     final batch = db.batch();
 
-    batch.delete(_tableName); // Clear old data
+    batch.delete(_tableName);
 
     for (final spot in spots) {
-      batch.insert(_tableName, {
-        'site_id': spot.siteId,
-        'borough': spot.borough,
-        'latitude': spot.latitude,
-        'longitude': spot.longitude,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      batch.insert(
+        _tableName,
+        {
+          'site_id': spot.siteId,
+          'borough': spot.borough,
+          'latitude': spot.latitude,
+          'longitude': spot.longitude,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
     await batch.commit(noResult: true);
   }
 
-  Future<List<ParkingSpot>> getSpotsInBounds(LatLngBounds bounds) async {
+  // This method is now fully decoupled from any map package.
+  Future<List<ParkingSpot>> getSpotsInBounds(
+    double south,
+    double north,
+    double west,
+    double east,
+  ) async {
     await _initializeAndCacheSpots();
 
     final db = await database;
@@ -110,12 +116,7 @@ class ApiService {
       _tableName,
       where:
           'latitude >= ? AND latitude <= ? AND longitude >= ? AND longitude <= ?',
-      whereArgs: [
-        bounds.southwest.latitude,
-        bounds.northeast.latitude,
-        bounds.southwest.longitude,
-        bounds.northeast.longitude,
-      ],
+      whereArgs: [south, north, west, east],
       limit: 500,
     );
 

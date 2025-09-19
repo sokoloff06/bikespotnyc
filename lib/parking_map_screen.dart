@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'api_service.dart';
-import 'parking_spot.dart';
 import 'parking_spot_details.dart';
 
 class ParkingMapScreen extends StatefulWidget {
@@ -16,119 +17,151 @@ class ParkingMapScreen extends StatefulWidget {
 }
 
 class _ParkingMapScreenState extends State<ParkingMapScreen> {
-  late GoogleMapController _mapController;
-  final LatLng _nycCenter = const LatLng(40.7128, -74.0060);
-  final Set<Marker> _markers = {};
   final ApiService _apiService = ApiService();
-  final ClusterManagerId clusterManagerId = ClusterManagerId('parking-spots');
-  late final ClusterManager clusterManager;
+  final MapController _mapController = MapController();
+  final LatLng _nycCenter = LatLng(40.7128, -74.0060);
+  List<Marker> _markers = [];
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    clusterManager = ClusterManager(clusterManagerId: clusterManagerId);
-    // Data fetching is now deferred until the map is created.
+    // _requestLocationAndMoveCamera();
   }
 
-  // Fetches spots only for the current visible map area.
-  Future<void> _updateMarkersForVisibleRegion() async {
-    final LatLngBounds visibleRegion = await _mapController.getVisibleRegion();
-    try {
-      final spots = await _apiService.getSpotsInBounds(visibleRegion);
-      _updateMarkers(spots);
-    } catch (e) {
-      debugPrint("Error fetching spots for visible region: $e");
-    }
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _mapController.dispose();
+    super.dispose();
   }
 
-  // Updates the markers on the map.
-  void _updateMarkers(List<ParkingSpot> spots) {
-    final newMarkers = spots
-        .map(
-          (spot) => Marker(
-            markerId: MarkerId(spot.siteId),
-            position: LatLng(spot.latitude, spot.longitude),
-            clusterManagerId: clusterManagerId,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ParkingSpotDetails(parkingSpot: spot),
-                ),
-              );
-            },
-          ),
-        )
-        .toSet();
-
-    setState(() {
-      _markers.clear();
-      _markers.addAll(newMarkers);
-    });
-  }
-
-  // This is your original camera and permissions logic, left untouched.
   Future<void> _requestLocationAndMoveCamera() async {
-    LocationPermission permission;
     bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint('Location services are disabled.');
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        debugPrint('Location permissions are denied');
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      debugPrint('Location permissions are permanently denied.');
+      return;
+    }
 
     try {
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('Location services are disabled.');
-        return;
-      }
-
-      permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          debugPrint('Location permissions are denied.');
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        debugPrint('Location permissions are permanently denied.');
-        return;
-      }
-
       final position = await Geolocator.getCurrentPosition();
-      _mapController.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(position.latitude, position.longitude),
-          14.0,
-        ),
-      );
+      _mapController.move(LatLng(position.latitude, position.longitude), 14.0);
     } catch (e) {
-      debugPrint("Error getting location: $e");
+      debugPrint("Error getting current position: $e");
     }
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    _updateMarkersForVisibleRegion(); // Initial data load for the starting view.
-  }
+  Future<void> _updateMarkers(LatLngBounds? bounds) async {
+    if (bounds == null) return;
 
-  // Called every time the user stops moving the map.
-  void _onCameraIdle() {
-    _updateMarkersForVisibleRegion();
+    try {
+      final spots = await _apiService.getSpotsInBounds(
+        bounds.south,
+        bounds.north,
+        bounds.west,
+        bounds.east,
+      );
+
+      final markers = spots
+          .map(
+            (spot) => Marker(
+              point: LatLng(spot.latitude, spot.longitude),
+              width: 30.0,
+              height: 30.0,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ParkingSpotDetails(parkingSpot: spot),
+                    ),
+                  );
+                },
+                child: const Icon(
+                  Icons.location_pin,
+                  color: Colors.red,
+                  size: 30.0,
+                ),
+              ),
+            ),
+          )
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _markers = markers;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error updating markers: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('NYC Bike Parking')),
-      body: GoogleMap(
-        onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(target: _nycCenter, zoom: 15.0),
-        myLocationEnabled: true,
-        myLocationButtonEnabled: true,
-        clusterManagers: {clusterManager},
-        markers: _markers,
-        onCameraIdle: _onCameraIdle, // Key change: triggers data updates.
-        // The cluster manager properties have been removed.
-        // google_maps_flutter handles clustering automatically on supported platforms.
+      appBar: AppBar(title: const Text('NYC Bike Parking (flutter_map)')),
+      body: FlutterMap(
+        mapController: _mapController,
+        options: MapOptions(
+          initialCenter: _nycCenter,
+          initialZoom: 12.0,
+          // FIX: Add onMapReady to trigger the initial marker load.
+          onMapReady: () {
+            _updateMarkers(_mapController.camera.visibleBounds);
+          },
+          onPositionChanged: (position, hasGesture) {
+            if (_debounce?.isActive ?? false) _debounce!.cancel();
+            _debounce = Timer(const Duration(milliseconds: 500), () {
+              _updateMarkers(position.visibleBounds);
+            });
+          },
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            subdomains: const ['a', 'b', 'c'],
+          ),
+          MarkerClusterLayerWidget(
+            options: MarkerClusterLayerOptions(
+              maxClusterRadius: 45,
+              size: const Size(40, 40),
+              markers: _markers,
+              builder: (context, markers) {
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.blue,
+                  ),
+                  child: Center(
+                    child: Text(
+                      markers.length.toString(),
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
