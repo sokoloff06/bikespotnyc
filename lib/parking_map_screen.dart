@@ -11,7 +11,7 @@ class ParkingMapScreen extends StatefulWidget {
 }
 
 class _ParkingMapScreenState extends State<ParkingMapScreen> {
-  late GoogleMapController mapController;
+  late GoogleMapController _mapController;
   final LatLng _center = const LatLng(40.7128, -74.0060);
   final Set<Marker> _markers = {};
   final ApiService _apiService = ApiService();
@@ -31,6 +31,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             Marker(
               markerId: MarkerId('${spot.latitude}_${spot.longitude}'),
               position: LatLng(spot.latitude, spot.longitude),
+              clusterManagerId: ClusterManagerId('parking-spots'),
               infoWindow: InfoWindow(
                 title: spot.location,
                 snippet: spot.borough,
@@ -53,22 +54,27 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   }
 
   void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
+    _mapController = controller;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('NYC Bike Parking'),
-      ),
+      appBar: AppBar(title: const Text('NYC Bike Parking')),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
-        initialCameraPosition: CameraPosition(
-          target: _center,
-          zoom: 11.0,
-        ),
+        initialCameraPosition: CameraPosition(target: _center, zoom: 11.0),
         markers: _markers,
+        clusterManagers: {
+          ClusterManager(
+            clusterManagerId: const ClusterManagerId('parking-spots'),
+            onClusterTap: (cluster) {
+              _mapController.animateCamera(
+                CameraUpdate.newLatLngZoom(cluster.position, 14),
+              );
+            },
+          ),
+        },
       ),
     );
   }
