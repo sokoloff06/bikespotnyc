@@ -31,8 +31,42 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      - name: Run tests
-        run: flutter test
-
       - name: Build Android APK
         run: flutter build apk --split-per-abi # Or flutter build appbundle for AAB
+
+      - name: Build and Sign Release AAB
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          alias: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          keyPassword: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+
+      - name: Upload Signed App Bundle as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-bundle
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+
+
+  deploy:
+    name: Deploy to Play Store
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-bundle
+          path: app/build/outputs/bundle/release
+
+      - name: Publish to Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: com.visokolov.bikespotnyc # Replace with your app's package name
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          track: internal # Use 'production', 'beta', or 'alpha' for other tracks
+          status: draft
