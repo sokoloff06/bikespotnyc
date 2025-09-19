@@ -144,7 +144,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('NYC Bike Parking (flutter_map)')),
+      appBar: AppBar(title: const Text('NYC Bike Parking')),
       floatingActionButton: FloatingActionButton(
         onPressed: _centerOnUser,
         child: const Icon(Icons.my_location),
@@ -174,8 +174,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           ),
           MarkerClusterLayerWidget(
             options: MarkerClusterLayerOptions(
-              maxClusterRadius: 45,
+              maxClusterRadius: 100,
+              maxZoom: 21,
               size: const Size(40, 40),
+              spiderfyCluster: false,
               markers: _markers,
               builder: (context, markers) {
                 return Container(
