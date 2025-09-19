@@ -31,7 +31,7 @@ class ParkingSpotDetails extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              parkingSpot.location,
+              parkingSpot.siteId,
               style:
                   const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
@@ -52,10 +52,10 @@ class ParkingSpotDetails extends StatelessWidget {
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Year Installed: ${parkingSpot.yrInstalled}',
-              style: const TextStyle(fontSize: 18),
-            ),
+            // Text(
+            //   'Year Installed: ${parkingSpot.dateInst}',
+            //   style: const TextStyle(fontSize: 18),
+            // ),
             const SizedBox(height: 32),
             Center(
               child: ElevatedButton(

@@ -1,33 +1,37 @@
-
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'parking_spot.dart';
 
 class ApiService {
   final String _baseUrl =
       'https://data.cityofnewyork.us/resource/592z-n7dk.json';
+  List<ParkingSpot> allSpots = [];
 
   Future<List<ParkingSpot>> fetchParkingSpots() async {
     final prefs = await SharedPreferences.getInstance();
     final lastFetched = prefs.getInt('last_fetched_timestamp') ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
-
     // Fetch new data if cache is older than a day
     if (now - lastFetched > 24 * 60 * 60 * 1000) {
-      List<ParkingSpot> allSpots = [];
       int offset = 0;
       const int limit = 1000;
       bool hasMoreData = true;
-
       while (hasMoreData) {
-        final response = await http.get(Uri.parse('$_baseUrl?\$limit=$limit&\$offset=$offset'));
+        final response = await http.get(
+          Uri.parse('$_baseUrl?\$limit=$limit&\$offset=$offset'),
+        );
         if (response.statusCode == 200) {
           final List<dynamic> jsonList = json.decode(response.body);
           if (jsonList.isEmpty) {
             hasMoreData = false;
           } else {
-            allSpots.addAll(jsonList.map((json) => ParkingSpot.fromJson(json)).toList());
+            allSpots.addAll(
+              jsonList.map((json) => ParkingSpot.fromJson(json)).toList(),
+            );
             if (jsonList.length < limit) {
               hasMoreData = false;
             } else {
@@ -38,16 +42,7 @@ class ApiService {
           throw Exception('Failed to load parking spots');
         }
       }
-
-      await prefs.setString('parking_data', json.encode(allSpots.map((spot) => {
-        'borough': spot.borough,
-        'asset_id': spot.assetId,
-        'location': spot.location,
-        'yr_install': spot.yrInstalled.toString(),
-        'latitude': spot.latitude.toString(),
-        'longitude': spot.longitude.toString(),
-      }).toList()));
-      await prefs.setInt('last_fetched_timestamp', now);
+      saveToCache(allSpots);
       return allSpots;
     } else {
       final cachedData = prefs.getString('parking_data');
@@ -59,5 +54,30 @@ class ApiService {
         return fetchParkingSpots();
       }
     }
+  }
+
+  saveToCache(List<ParkingSpot> allSpots) async {
+    SharedPreferences.getInstance().then(onGotPrefs);
+  }
+
+  Future onGotPrefs(SharedPreferences prefs) async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await prefs.setString(
+      'parking_data',
+      json.encode(
+        allSpots
+            .map(
+              (spot) => {
+                'borough': spot.borough,
+                'site_id': spot.siteId,
+                'latitude': spot.latitude.toString(),
+                'longitude': spot.longitude.toString(),
+              },
+            )
+            .toList(),
+      ),
+    );
+    await prefs.setInt('last_fetched_timestamp', now);
   }
 }

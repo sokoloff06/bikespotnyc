@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import 'api_service.dart';
-import 'parking_spot.dart';
 import 'parking_spot_details.dart';
 
 class ParkingMapScreen extends StatefulWidget {
@@ -17,40 +19,42 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final LatLng _nycCenter = const LatLng(40.7128, -74.0060);
   final Set<Marker> _markers = {};
   final ApiService _apiService = ApiService();
+  final ClusterManagerId clusterManagerId = ClusterManagerId('parking-spots');
+  late final ClusterManager clusterManager;
 
   @override
   void initState() {
     super.initState();
+    clusterManager = ClusterManager(clusterManagerId: clusterManagerId);
     _fetchParkingSpots();
   }
 
   void _fetchParkingSpots() async {
     try {
-      final spots = await _apiService.fetchParkingSpots();
-      if (!mounted) return;
-      setState(() {
-        for (final spot in spots) {
-          _markers.add(
-            Marker(
-              markerId: MarkerId('${spot.latitude}_${spot.longitude}'),
-              position: LatLng(spot.latitude, spot.longitude),
-              clusterManagerId: const ClusterManagerId('parking-spots'),
-              infoWindow: InfoWindow(
-                title: spot.location,
-                snippet: spot.borough,
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ParkingSpotDetails(parkingSpot: spot),
-                  ),
-                );
-              },
-            ),
-          );
-        }
-      });
+      _apiService.fetchParkingSpots().then(
+        (spots) => {
+          setState(() {
+            for (final spot in spots) {
+              _markers.add(
+                Marker(
+                  markerId: MarkerId(spot.siteId),
+                  position: LatLng(spot.latitude, spot.longitude),
+                  clusterManagerId: clusterManagerId,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ParkingSpotDetails(parkingSpot: spot),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
+          }),
+        },
+      );
     } catch (e) {
       debugPrint("Error fetching parking spots: $e");
     }
@@ -106,19 +110,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       body: GoogleMap(
         onMapCreated: _onMapCreated,
         initialCameraPosition: CameraPosition(target: _nycCenter, zoom: 11.0),
-        markers: _markers,
         myLocationEnabled: true,
         myLocationButtonEnabled: true,
-        clusterManagers: {
-          ClusterManager(
-            clusterManagerId: const ClusterManagerId('parking-spots'),
-            onClusterTap: (cluster) {
-              _mapController.animateCamera(
-                CameraUpdate.newLatLngZoom(cluster.position, 14),
-              );
-            },
-          ),
-        },
+        clusterManagers: {clusterManager},
+        markers: _markers,
       ),
     );
   }
