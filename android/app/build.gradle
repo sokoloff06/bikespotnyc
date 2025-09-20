@@ -56,16 +56,13 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        manifestPlaceholders = [
-            mapsApiKey: localProperties.getProperty('maps.apiKey')
-        ]
     }
 
     signingConfigs {
         release {
             keyAlias = keystoreProperties['keyAlias']
             keyPassword = keystoreProperties['keyPassword']
-            storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storeFile = keystoreProperties['storeFile']
             storePassword = keystoreProperties['storePassword']
         }
     }
