@@ -40,6 +40,7 @@ jobs:
           echo "keystore-path=$GITHUB_WORKSPACE/keystore.jks" >> $GITHUB_OUTPUT
 
       - name: Build Android App Bundle
+        id: build
         # Use the secrets as environment variables for the Gradle build
         env:
           CI: true # This variable triggers the 'if' condition in build.gradle
@@ -47,13 +48,15 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASS }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEYALIAS_NAME }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEYALIAS_PASS }}
-        run: flutter build appbundle --release # Or 'apk --release'
+        run: |
+          flutter build appbundle --release
+          echo "signedReleaseFile=build/app/outputs/bundle/release/app-release.aab" >> $GITHUB_OUTPUT
 
       - name: Upload Signed App Bundle as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-bundle
-          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          path: ${{ steps.build.outputs.signedReleaseFile }}
 
   deploy:
     name: Deploy to Play Store
