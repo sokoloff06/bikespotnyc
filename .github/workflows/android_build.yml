@@ -31,18 +31,23 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      - name: Build Android APK
-        run: flutter build appbundle
+      - name: Decode Keystore
+        id: decode_keystore
+        # Decode the base64 secret and create the keystore file
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/keystore.jks
+          # Set the path as an output for the next step
+          echo "keystore-path=$GITHUB_WORKSPACE/keystore.jks" >> $GITHUB_OUTPUT
 
-      - name: Build and Sign Release AAB
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: app/build/outputs/bundle/release
-          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          alias: ${{ secrets.ANDROID_KEYALIAS_NAME }}
-          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASS }}
-          keyPassword: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+      - name: Build Android App Bundle
+        # Use the secrets as environment variables for the Gradle build
+        env:
+          CI: true # This variable triggers the 'if' condition in build.gradle
+          KEYSTORE_PATH: ${{ steps.decode_keystore.outputs.keystore-path }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+        run: flutter build appbundle --release # Or 'apk --release'
 
       - name: Upload Signed App Bundle as Artifact
         uses: actions/upload-artifact@v4
