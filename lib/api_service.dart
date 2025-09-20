@@ -77,6 +77,8 @@ class ApiService {
         throw Exception('Failed to load parking spots');
       }
     }
+    // Do not overwrite local DB if there are no spots.
+    if (fetchedSpots.isEmpty) return;
     await _insertSpotsIntoDb(fetchedSpots);
     await prefs.setInt('last_fetched_timestamp', now);
   }
