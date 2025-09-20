@@ -1,5 +1,5 @@
-name: myapp
-description: "A new Flutter project."
+name: bikespotnyc
+description: "Bike parking spots map for NYC"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -20,6 +20,7 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.9.0
+  flutter: 3.35.4
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -34,7 +35,6 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  google_maps_flutter: ^2.13.1
   http: ^1.5.0
   provider: ^6.1.5+1
   shared_preferences: ^2.5.3
@@ -43,6 +43,10 @@ dependencies:
   geolocator: ^14.0.2
   sqflite: ^2.4.2
   path_provider: ^2.1.5
+  flutter_map: ^8.2.1
+  flutter_map_marker_cluster: ^8.1.0
+  latlong2: ^0.9.1
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
@@ -67,8 +71,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/
+  # assets:
+  #   - assets/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -88,7 +92,7 @@ flutter:
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
   #   - family: Trajan Pro
-  #     fonts:
+  #     fonts
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700

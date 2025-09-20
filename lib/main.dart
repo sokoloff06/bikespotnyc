@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:myapp/api_service.dart';
-import 'package:myapp/parking_map_screen.dart';
+import 'api_service.dart';
+import 'parking_map_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {

@@ -1,0 +1,79 @@
+name: Flutter Android CI
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
+      - flutter_map
+  pull_request:
+    branches:
+      - main # Trigger on pull requests to the main branch
+
+jobs:
+  build_android:
+    runs-on: ubuntu-latest # Use an Ubuntu runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17' # Specify Java version required by Android
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4' # Specify your Flutter version
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Decode Keystore
+        id: decode_keystore
+        # Decode the base64 secret and create the keystore file
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/keystore.jks
+          # Set the path as an output for the next step
+          echo "keystore-path=$GITHUB_WORKSPACE/keystore.jks" >> $GITHUB_OUTPUT
+
+      - name: Build Android App Bundle
+        id: build
+        # Use the secrets as environment variables for the Gradle build
+        env:
+          CI: true # This variable triggers the 'if' condition in build.gradle
+          KEYSTORE_PATH: ${{ steps.decode_keystore.outputs.keystore-path }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEYALIAS_NAME }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEYALIAS_PASS }}
+        run: |
+          flutter build appbundle --release
+          echo "signedReleaseFile=build/app/outputs/bundle/release/app-release.aab" >> $GITHUB_OUTPUT
+
+      - name: Upload Signed App Bundle as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-bundle
+          path: ${{ steps.build.outputs.signedReleaseFile }}
+
+  deploy:
+    name: Deploy to Play Store
+    needs: build_android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-bundle
+          path: app/build/outputs/bundle/release
+
+      - name: Publish to Play Store
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: com.visokolov.bikespotnyc # Replace with your app's package name
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          track: internal # Use 'production', 'beta', or 'alpha' for other tracks
+          status: draft
