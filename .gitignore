@@ -43,6 +43,7 @@ bcs-deploy.cfg
 
 # Visual Studio
 .vs/
+.vscode/
 /xcuserdata/
 /DerivedData/
 *.hmap

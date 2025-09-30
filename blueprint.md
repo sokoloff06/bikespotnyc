@@ -1,34 +1,30 @@
 
-# Project Blueprint: NYC Bicycle Parking Finder
+## Project Blueprint: NYC Bicycle Parking Finder
 
 ## Overview
 
-This document outlines the plan for creating a Flutter application that displays bicycle parking locations in New York City on an interactive map. The application will fetch data from the NYC OpenData portal, implement caching to reduce network requests, and display the parking spots as markers on a Google Map.
+This document outlines the plan for creating a Flutter application that displays bicycle parking locations in New York City on an interactive map. The application will fetch data from a `spots.json` file hosted in a Firebase Cloud Storage bucket, implement local caching in an SQLite database to reduce network requests, and display the parking spots as markers on a map.
 
 ## Features
 
 *   **Interactive Map:** Users will see a map of NYC with markers indicating bicycle parking locations.
 *   **Marker Clustering:** To improve performance and readability, markers will be clustered together at higher zoom levels.
-*   **Data Caching:** The application will cache the parking data to provide a faster experience and reduce API usage. Data will be refreshed periodically.
+*   **Data Caching:** The application will cache the parking data in a local SQLite database to provide a fast, offline-first experience. Data is synchronized from Firebase Storage when the app starts if updates are available.
 *   **Detailed Information:** Tapping on a parking marker will display more information about that location.
+*   **Current Location:** The map will show the user's current location and allow them to center the map on it.
 
 ## Architecture
 
 *   **State Management:** Provider for managing the state of the parking data.
-*   **Data Fetching:** The `http` package will be used to make requests to the NYC OpenData API.
-*   **Mapping:** The `google_maps_flutter` package will be used to display the interactive map and handle marker clustering.
-*   **Caching:** The `shared_preferences` package will be used to store the data locally.
+*   **Data Fetching:** The `firebase_storage` package is used to download parking data from the cloud.
+*   **Mapping:** The `flutter_map` package is used to display the interactive map. `flutter_map_marker_cluster` is used for clustering.
+*   **Local Caching:** The `sqflite` package is used for the local database cache. `shared_preferences` stores the timestamp of the last data sync.
+*   **Location:** The `geolocator` package is used to get the user's current location.
 
-## Plan
+## Current Plan: Integrate Firebase Storage
 
-1.  **Set up the project:** Add the necessary dependencies to `pubspec.yaml`: `google_maps_flutter`, `http`, and `provider`, `shared_preferences`.
-2.  **Create the data model:** Define a Dart class to represent the bicycle parking data.
-3.  **Implement the API service:** Create a service to fetch the data from the NYC OpenData API and handle caching.
-4.  **Create the map screen:**
-    *   Set up the Google Map widget.
-    *   Fetch the parking data using the API service.
-    *   Implement marker clustering using the official Google Maps Flutter package.
-    *   Display the parking locations as markers on the map.
-5.  **Develop the main application:**
-    *   Set up the main application widget.
-    *   Use a `ChangeNotifierProvider` to provide the parking data to the map screen.
+1.  **Add Firebase Dependencies:** Add `firebase_core` and `firebase_storage` to `pubspec.yaml`.
+2.  **Initialize Firebase:** Create a `lib/main.dart` file and ensure `Firebase.initializeApp()` is called before the app runs.
+3.  **Update ApiService:** Modify `ApiService` to fetch a `spots.json` file from Firebase Storage instead of the NYC OpenData HTTP endpoint.
+4.  **Implement Cache Checking:** Use the file metadata from Firebase Storage to check if the local SQLite cache is stale. If it is, download the new file and update the local database.
+5.  **Update Blueprint:** Reflect the architectural change from using an HTTP API to Firebase Storage in `blueprint.md`.

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,8 +11,6 @@ import 'package:sqflite/sqflite.dart';
 import 'parking_spot.dart';
 
 class ApiService {
-  final String _baseUrl =
-      'https://data.cityofnewyork.us/resource/592z-n7dk.json';
   static const String _dbName = 'parking_spots.db';
   static const String _tableName = 'spots';
   Database? _database;
@@ -49,57 +47,67 @@ class ApiService {
 
   Future<void> _initializeAndCacheSpots() async {
     final prefs = await SharedPreferences.getInstance();
-    final int lastFetched = prefs.getInt('last_fetched_timestamp') ?? 0;
-    final int now = DateTime.now().millisecondsSinceEpoch;
+    final String? lastUpdated = prefs.getString('last_updated_timestamp');
     final int spotCount = await _getSpotCount();
 
-    if (spotCount > 0 && (now - lastFetched <= 24 * 60 * 60 * 1000)) {
-      return;
-    }
+    try {
+      final storageRef = FirebaseStorage.instance.ref().child('spots.json');
+      final metadata = await storageRef.getMetadata();
+      final remoteUpdated = metadata.updated;
 
-    List<ParkingSpot> fetchedSpots = [];
-    int offset = 0;
-    const int limit = 1000;
-    bool hasMoreData = true;
+      // If we have local data and the remote data hasn't changed, we're good.
+      if (spotCount > 0 &&
+          remoteUpdated != null &&
+          lastUpdated == remoteUpdated.toIso8601String()) {
+        print("Local cache is up to date.");
+        return;
+      }
 
-    while (hasMoreData) {
-      final response = await http
-          .get(Uri.parse('$_baseUrl?\$limit=$limit&\$offset=$offset'));
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        if (jsonList.isEmpty || jsonList.length < limit) {
-          hasMoreData = false;
+      print("Fetching updated spots from Firebase Storage...");
+      final data = await storageRef.getData();
+      if (data == null) {
+        print("No data downloaded from Firebase Storage.");
+        return;
+      }
+
+      final jsonList = json.decode(utf8.decode(data)) as List<dynamic>;
+      final fetchedSpots = jsonList
+          .map((json) => ParkingSpot.fromJson(json))
+          .toList();
+
+      if (fetchedSpots.isNotEmpty) {
+        await insertSpotsIntoDb(fetchedSpots);
+        if (remoteUpdated != null) {
+          await prefs.setString(
+            'last_updated_timestamp',
+            remoteUpdated.toIso8601String(),
+          );
         }
-        fetchedSpots.addAll(
-            jsonList.map((json) => ParkingSpot.fromJson(json)).toList());
-        offset += limit;
-      } else {
-        throw Exception('Failed to load parking spots');
+      }
+    } catch (e) {
+      print("Error initializing spots from Firebase: $e");
+      // If there's an error (e.g., network), we can rely on existing cache if it exists.
+      if (spotCount == 0) {
+        throw Exception(
+          'Failed to initialize parking spots and no cache available.',
+        );
       }
     }
-    // Do not overwrite local DB if there are no spots.
-    if (fetchedSpots.isEmpty) return;
-    await _insertSpotsIntoDb(fetchedSpots);
-    await prefs.setInt('last_fetched_timestamp', now);
   }
 
-  Future<void> _insertSpotsIntoDb(List<ParkingSpot> spots) async {
+  Future<void> insertSpotsIntoDb(List<ParkingSpot> spots) async {
     final db = await database;
     final batch = db.batch();
 
     batch.delete(_tableName);
 
     for (final spot in spots) {
-      batch.insert(
-        _tableName,
-        {
-          'site_id': spot.siteId,
-          'borough': spot.borough,
-          'latitude': spot.latitude,
-          'longitude': spot.longitude,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      batch.insert(_tableName, {
+        'site_id': spot.siteId,
+        'borough': spot.borough,
+        'latitude': spot.latitude,
+        'longitude': spot.longitude,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
   }
