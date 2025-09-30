@@ -3,8 +3,7 @@ name: Flutter Android CI
 on:
   push:
     branches:
-      - main # Trigger on pushes to the main branch
-      - flutter_map
+      - master # Trigger on pushes to the main branch
   pull_request:
     branches:
       - main # Trigger on pull requests to the main branch
