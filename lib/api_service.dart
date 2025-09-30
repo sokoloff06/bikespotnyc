@@ -51,7 +51,9 @@ class ApiService {
     final int spotCount = await _getSpotCount();
 
     try {
-      final storageRef = FirebaseStorage.instance.ref().child('spots.json');
+      final storageRef = FirebaseStorage.instance
+          .ref('/files')
+          .child('bike_spots.json');
       final metadata = await storageRef.getMetadata();
       final remoteUpdated = metadata.updated;
 
@@ -64,16 +66,22 @@ class ApiService {
       }
 
       print("Fetching updated spots from Firebase Storage...");
-      final data = await storageRef.getData();
-      if (data == null) {
-        print("No data downloaded from Firebase Storage.");
-        return;
-      }
 
-      final jsonList = json.decode(utf8.decode(data)) as List<dynamic>;
-      final fetchedSpots = jsonList
-          .map((json) => ParkingSpot.fromJson(json))
-          .toList();
+      // Download to a temporary file to avoid in-memory buffer limitations.
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/bike_spots.json');
+      List<ParkingSpot> fetchedSpots = [];
+
+      try {
+        await storageRef.writeToFile(tempFile);
+        final fileContents = await tempFile.readAsString();
+        final jsonList = json.decode(fileContents) as List<dynamic>;
+        fetchedSpots = jsonList
+            .map((json) => ParkingSpot.fromJson(json))
+            .toList();
+      } finally {
+        if (await tempFile.exists()) await tempFile.delete();
+      }
 
       if (fetchedSpots.isNotEmpty) {
         await insertSpotsIntoDb(fetchedSpots);
