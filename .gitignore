@@ -29,6 +29,7 @@
 /android/.gradle
 /android/local.properties
 /android/.idea/
+/android/app/release
 
 # Rider
 .idea/
