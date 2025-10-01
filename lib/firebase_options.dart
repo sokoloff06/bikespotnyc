@@ -47,41 +47,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: String.fromEnvironment('WEB_API_KEY', defaultValue: ''),
-    appId: String.fromEnvironment('WEB_APP_ID', defaultValue: ''),
+    apiKey: String.fromEnvironment('WEB_FIREBASE_API_KEY', defaultValue: ''),
+    appId: String.fromEnvironment('WEB_FIREBASE_APP_ID', defaultValue: ''),
     messagingSenderId: String.fromEnvironment(
-      'MESSAGING_SENDER_ID',
+      'FIREBASE_MESSAGING_SENDER_ID',
       defaultValue: '',
     ),
-    projectId: String.fromEnvironment('PROJECT_ID', defaultValue: ''),
+    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: ''),
     authDomain:
-        '${String.fromEnvironment('PROJECT_ID', defaultValue: '')}.firebaseapp.com',
+        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebaseapp.com',
     storageBucket:
-        '${String.fromEnvironment('PROJECT_ID', defaultValue: '')}.firebasestorage.app',
+        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: String.fromEnvironment('ANDROID_API_KEY', defaultValue: ''),
-    appId: String.fromEnvironment('ANDROID_APP_ID', defaultValue: ''),
-    messagingSenderId: String.fromEnvironment(
-      'MESSAGING_SENDER_ID',
+    apiKey: String.fromEnvironment(
+      'ANDROID_FIREBASE_API_KEY',
       defaultValue: '',
     ),
-    projectId: String.fromEnvironment('PROJECT_ID', defaultValue: ''),
+    appId: String.fromEnvironment('ANDROID_FIREBASE_APP_ID', defaultValue: ''),
+    messagingSenderId: String.fromEnvironment(
+      'FIREBASE_MESSAGING_SENDER_ID',
+      defaultValue: '',
+    ),
+    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: ''),
     storageBucket:
-        '${String.fromEnvironment('PROJECT_ID', defaultValue: '')}.firebasestorage.app',
+        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: String.fromEnvironment('IOS_API_KEY', defaultValue: ''),
-    appId: String.fromEnvironment('IOS_APP_ID', defaultValue: ''),
+    apiKey: String.fromEnvironment('IOS_FIREBASE_API_KEY', defaultValue: ''),
+    appId: String.fromEnvironment('IOS_FIREBASE_APP_ID', defaultValue: ''),
     messagingSenderId: String.fromEnvironment(
-      'MESSAGING_SENDER_ID',
+      'FIREBASE_MESSAGING_SENDER_ID',
       defaultValue: '',
     ),
-    projectId: String.fromEnvironment('PROJECT_ID', defaultValue: ''),
+    projectId: String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: ''),
     storageBucket:
-        '${String.fromEnvironment('PROJECT_ID', defaultValue: '')}.firebasestorage.app',
-    iosBundleId: String.fromEnvironment('IOS_BUNDLE_ID', defaultValue: ''),
+        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebasestorage.app',
+    iosBundleId: String.fromEnvironment(
+      'FIREBASE_IOS_BUNDLE_ID',
+      defaultValue: '',
+    ),
   );
 }

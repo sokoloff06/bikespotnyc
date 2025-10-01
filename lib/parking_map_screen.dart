@@ -139,6 +139,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         });
       }
     } catch (e) {
+      // TODO: Add Web implementation
+      // https://stackoverflow.com/questions/57182634/how-can-i-read-and-write-files-in-flutter-web
       debugPrint("Error updating markers: $e");
     }
   }
