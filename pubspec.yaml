@@ -50,6 +50,7 @@ dependencies:
   latlong2: ^0.9.1
   path: ^1.9.1
   google_maps_flutter: ^2.13.1
+  firebase_analytics: ^11.6.0
 
 dev_dependencies:
   flutter_test:
