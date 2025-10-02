@@ -44,6 +44,13 @@ jobs:
           # Set the path as an output for the next step
           echo "keystore-path=$GITHUB_WORKSPACE/keystore.jks" >> $GITHUB_OUTPUT
 
+      - name: Decode API keys
+        id: decode_api_keys
+        # Decode the base64 secret and create the keystore file
+        run: |
+          echo "${{ secrets.API_KEYS_JSON_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/api_keys.json
+          echo "api-keys-path=$GITHUB_WORKSPACE/api_keys.json" >> $GITHUB_OUTPUT
+
       - name: Build Android App Bundle
         id: build
         # Use the secrets as environment variables for the Gradle build
@@ -55,16 +62,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEYALIAS_PASS }}
         run: |
           flutter build appbundle --release \
-            --dart-define=WEB_API_KEY=${{ secrets.WEB_API_KEY }} \
-            --dart-define=WEB_APP_ID=${{ secrets.WEB_APP_ID }} \
-            --dart-define=ANDROID_API_KEY=${{ secrets.ANDROID_API_KEY }} \
-            --dart-define=ANDROID_APP_ID=${{ secrets.ANDROID_APP_ID }} \
-            --dart-define=IOS_API_KEY=${{ secrets.IOS_API_KEY }} \
-            --dart-define=IOS_APP_ID=${{ secrets.IOS_APP_ID }} \
-            --dart-define=MESSAGING_SENDER_ID=${{ secrets.MESSAGING_SENDER_ID }} \
-            --dart-define=PROJECT_ID=${{ secrets.PROJECT_ID }} \
-            --dart-define=STORAGE_BUCKET=${{ secrets.STORAGE_BUCKET }} \
-            --dart-define=IOS_BUNDLE_ID=${{ secrets.IOS_BUNDLE_ID }}
+            --dart-define-from-file=${{ steps.decode_api_keys.outputs.api-keys-path }}
           echo "signedReleaseFile=build/app/outputs/bundle/release/app-release.aab" >> $GITHUB_OUTPUT
 
       - name: Upload Signed App Bundle as Artifact

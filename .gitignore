@@ -36,6 +36,7 @@
 /ios/Runner/GoogleService-Info.plist
 # lib/firebase_options.dart
 .env
+api_keys.json
 
 # Rider
 .idea/
