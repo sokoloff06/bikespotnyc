@@ -30,6 +30,7 @@ class MyApp extends StatelessWidget {
       title: 'NYC Bicycle Parking',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const ParkingMapScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
