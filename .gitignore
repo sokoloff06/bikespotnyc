@@ -67,7 +67,8 @@ bcs-deploy.cfg
 *.moved-aside
 *.pbxuser
 *.perspectivev3
-*.xcworkspace
+# *.xcworkspace
+*.xcuserdata/
 xcuserdata/
 .generated/
 DerivedData/
