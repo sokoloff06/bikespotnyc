@@ -8,7 +8,14 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    // TODO: Investigate
+    print("Second main() run");
+  }
   runApp(
     Provider<ApiService>(create: (_) => ApiService(), child: const MyApp()),
   );

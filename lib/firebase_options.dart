@@ -47,71 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: const String.fromEnvironment(
-      'WEB_FIREBASE_API_KEY',
-      defaultValue: '',
-    ),
-    appId: const String.fromEnvironment(
-      'WEB_FIREBASE_APP_ID',
-      defaultValue: '',
-    ),
-    messagingSenderId: const String.fromEnvironment(
-      'FIREBASE_MESSAGING_SENDER_ID',
-      defaultValue: '',
-    ),
-    projectId: const String.fromEnvironment(
-      'FIREBASE_PROJECT_ID',
-      defaultValue: '',
-    ),
-    authDomain:
-        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebaseapp.com',
-    storageBucket:
-        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebasestorage.app',
+    apiKey: 'AIzaSyBT7zQbj0tMdmP1gbDenjbvULqbDQWtO60',
+    appId: '1:557379891934:web:3a42295acc8d853f39884f',
+    messagingSenderId: '557379891934',
+    projectId: 'bikespot-nyc',
+    authDomain: 'bikespot-nyc.firebaseapp.com',
+    storageBucket: 'bikespot-nyc.firebasestorage.app',
+    measurementId: 'G-CN9MBT0CQZ',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: const String.fromEnvironment(
-      'ANDROID_FIREBASE_API_KEY',
-      defaultValue: '',
-    ),
-    appId: const String.fromEnvironment(
-      'ANDROID_FIREBASE_APP_ID',
-      defaultValue: '',
-    ),
-    messagingSenderId: const String.fromEnvironment(
-      'FIREBASE_MESSAGING_SENDER_ID',
-      defaultValue: '',
-    ),
-    projectId: const String.fromEnvironment(
-      'FIREBASE_PROJECT_ID',
-      defaultValue: '',
-    ),
-    storageBucket:
-        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebasestorage.app',
+    apiKey: 'AIzaSyC9NAnyYzFbMv06xyfrLzNryODoBOaZY9g',
+    appId: '1:557379891934:android:5e22b8aa0a77fc9f39884f',
+    messagingSenderId: '557379891934',
+    projectId: 'bikespot-nyc',
+    storageBucket: 'bikespot-nyc.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: const String.fromEnvironment(
-      'IOS_FIREBASE_API_KEY',
-      defaultValue: '',
-    ),
-    appId: const String.fromEnvironment(
-      'IOS_FIREBASE_APP_ID',
-      defaultValue: '',
-    ),
-    messagingSenderId: const String.fromEnvironment(
-      'FIREBASE_MESSAGING_SENDER_ID',
-      defaultValue: '',
-    ),
-    projectId: const String.fromEnvironment(
-      'FIREBASE_PROJECT_ID',
-      defaultValue: '',
-    ),
-    storageBucket:
-        '${String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '')}.firebasestorage.app',
-    iosBundleId: const String.fromEnvironment(
-      'FIREBASE_IOS_BUNDLE_ID',
-      defaultValue: '',
-    ),
+    apiKey: 'AIzaSyAbcSQ9PEAnTI9n16hEelPd0ZuJQhidBrw',
+    appId: '1:557379891934:ios:19c9ade07b92233639884f',
+    messagingSenderId: '557379891934',
+    projectId: 'bikespot-nyc',
+    storageBucket: 'bikespot-nyc.firebasestorage.app',
+    iosBundleId: 'com.visokolov.bikespotnyc',
   );
 }
