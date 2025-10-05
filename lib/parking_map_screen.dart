@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:bikespotnyc/adaptive_fab.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' hide Element;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,6 +11,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'api_service.dart';
 import 'parking_spot_details.dart';
+import 'parking_spot.dart';
 
 class ParkingMapScreen extends StatefulWidget {
   const ParkingMapScreen({super.key});
@@ -95,6 +99,17 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     }
   }
 
+  void _navigateToDetails(ParkingSpot spot) {
+    final route = Platform.isIOS
+        ? CupertinoPageRoute(
+            builder: (context) => ParkingSpotDetails(parkingSpot: spot),
+          )
+        : MaterialPageRoute(
+            builder: (context) => ParkingSpotDetails(parkingSpot: spot),
+          );
+    Navigator.push(context, route);
+  }
+
   Future<void> _updateMarkers(LatLngBounds? bounds) async {
     if (bounds == null) return;
 
@@ -113,15 +128,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               width: 30.0,
               height: 30.0,
               child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ParkingSpotDetails(parkingSpot: spot),
-                    ),
-                  );
-                },
+                onTap: () => _navigateToDetails(spot),
                 child: const Icon(
                   Icons.location_pin,
                   color: Colors.red,
@@ -147,82 +154,89 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('NYC Bike Parking')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _centerOnUser,
-        child: const Icon(Icons.my_location),
-      ),
-      body: FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          initialCenter: _nycCenter,
-          initialZoom: 12.0,
-          interactionOptions: InteractionOptions(
-            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-          ),
-          onMapReady: () {
-            print("Map is ready");
-            if (_debounce?.isActive ?? false) _debounce!.cancel();
-            _debounce = Timer(const Duration(milliseconds: 500), () {
-              _updateMarkers(_mapController.camera.visibleBounds);
-            });
-          },
-          onPositionChanged: (position, hasGesture) {
-            if (_debounce?.isActive ?? false) _debounce!.cancel();
-            _debounce = Timer(const Duration(milliseconds: 500), () {
-              _updateMarkers(position.visibleBounds);
-            });
-          },
+    final mapWidget = FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: _nycCenter,
+        initialZoom: 12.0,
+        interactionOptions: InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            subdomains: const ['a', 'b', 'c'],
-          ),
-          MarkerClusterLayerWidget(
-            options: MarkerClusterLayerOptions(
-              maxClusterRadius: 100,
-              maxZoom: 21,
-              size: const Size(40, 40),
-              spiderfyCluster: false,
-              markers: _markers,
-              builder: (context, markers) {
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.blue,
-                  ),
-                  child: Center(
-                    child: Text(
-                      markers.length.toString(),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          if (_currentPosition != null)
-            MarkerLayer(
-              markers: [
-                Marker(
-                  width: 80,
-                  height: 80,
-                  point: LatLng(
-                    _currentPosition!.latitude,
-                    _currentPosition!.longitude,
-                  ),
-                  child: const Icon(
-                    Icons.my_location,
-                    color: Colors.blueAccent,
-                    size: 40.0,
+        onMapReady: () {
+          print("Map is ready");
+          if (_debounce?.isActive ?? false) _debounce!.cancel();
+          _debounce = Timer(const Duration(milliseconds: 500), () {
+            _updateMarkers(_mapController.camera.visibleBounds);
+          });
+        },
+        onPositionChanged: (position, hasGesture) {
+          if (_debounce?.isActive ?? false) _debounce!.cancel();
+          _debounce = Timer(const Duration(milliseconds: 500), () {
+            _updateMarkers(position.visibleBounds);
+          });
+        },
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          subdomains: const ['a', 'b', 'c'],
+        ),
+        MarkerClusterLayerWidget(
+          options: MarkerClusterLayerOptions(
+            maxClusterRadius: 100,
+            maxZoom: 21,
+            size: const Size(40, 40),
+            spiderfyCluster: false,
+            markers: _markers,
+            builder: (context, markers) {
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.blue,
+                ),
+                child: Center(
+                  child: Text(
+                    markers.length.toString(),
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
-              ],
-            ),
+              );
+            },
+          ),
+        ),
+        if (_currentPosition != null)
+          MarkerLayer(
+            markers: [
+              Marker(
+                width: 80,
+                height: 80,
+                point: LatLng(
+                  _currentPosition!.latitude,
+                  _currentPosition!.longitude,
+                ),
+                child: const Icon(
+                  Icons.my_location,
+                  color: Colors.blueAccent,
+                  size: 40.0,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          mapWidget,
+          // On Android, the FAB is part of the Scaffold, but on iOS it's a
+          // positioned widget inside the body. This Stack makes it work for both.
+          if (Platform.isIOS) AdaptiveFab(onPressed: _centerOnUser),
         ],
       ),
+      floatingActionButton: !Platform.isIOS
+          ? AdaptiveFab(onPressed: _centerOnUser)
+          : null,
     );
   }
 }

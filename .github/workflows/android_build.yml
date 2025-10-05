@@ -6,11 +6,13 @@ on:
       - master # Trigger on pushes to the main branch
     paths:
       - 'android/**'
+      - 'lib/**'
   pull_request:
     branches:
       - master # Trigger on pull requests to the main branch
     paths:
       - 'android/**'
+      - 'lib/**'
 
 jobs:
   build_android:

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:bikespotnyc/parking_map_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -26,11 +28,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'NYC Bicycle Parking',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ParkingMapScreen(),
-      debugShowCheckedModeBanner: false,
-    );
+    if (Platform.isIOS) {
+      return CupertinoApp(
+        title: 'NYC Bicycle Parking',
+        theme: const CupertinoThemeData(
+          primaryColor: CupertinoColors.systemBlue,
+        ),
+        home: const ParkingMapScreen(),
+        debugShowCheckedModeBanner: false,
+      );
+    } else {
+      return MaterialApp(
+        title: 'NYC Bicycle Parking',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: const ParkingMapScreen(),
+        debugShowCheckedModeBanner: false,
+      );
+    }
   }
 }
