@@ -47,6 +47,8 @@
 		<string>Your location is used to show nearby parking locations</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>BikeSpot NYC uses your location to show you on the map and help find nearby bike parking spots</string>
 		<key>LSApplicationQueriesSchemes</key>
 		<array>
 			<string>comgooglemaps</string>
