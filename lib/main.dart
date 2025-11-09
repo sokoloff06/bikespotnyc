@@ -9,9 +9,15 @@ import 'package:provider/provider.dart';
 
 import 'api_service.dart';
 import 'firebase_options.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // TODO: hide token
+  String accessToken = String.fromEnvironment("MAPBOX_ACCESS_TOKEN");
+  // MapboxOptions.setAccessToken(
+  //   "pk.eyJ1Ijoidmlzb2tvbG92IiwiYSI6ImNtaHJ5enh0ODBjYnQyanF6d3V1YWJnNngifQ.BHKojIdapZ8feUb4WUyXOg",
+  // );
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -27,9 +33,21 @@ void main() async {
     // TODO: Investigate
     print("Second main() run");
   }
-  runApp(
-    Provider<ApiService>(create: (_) => ApiService(), child: const MyApp()),
+
+  // Define options for your camera
+  CameraOptions camera = CameraOptions(
+    center: Point(coordinates: Position(-98.0, 39.5)),
+    zoom: 2,
+    bearing: 0,
+    pitch: 0,
   );
+
+  // Run your application, passing your CameraOptions to the MapWidget
+  runApp(MaterialApp(home: MapWidget(cameraOptions: camera)));
+
+  // runApp(
+  //   Provider<ApiService>(create: (_) => ApiService(), child: const MyApp()),
+  // );
 }
 
 class MyApp extends StatelessWidget {
