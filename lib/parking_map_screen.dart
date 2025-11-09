@@ -27,6 +27,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   List<Marker> _markers = [];
   Timer? _debounce;
   Position? _currentPosition;
+  bool _isLoading = true;
   StreamSubscription<Position>? _positionStreamSubscription;
 
   @override
@@ -113,6 +114,12 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   Future<void> _updateMarkers(LatLngBounds? bounds) async {
     if (bounds == null) return;
 
+    if (mounted && !_isLoading) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
     try {
       final spots = await _apiService.getSpotsInBounds(
         bounds.south,
@@ -143,12 +150,18 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         setState(() {
           print("Markers added");
           _markers = markers;
+          _isLoading = false;
         });
       }
     } catch (e) {
       // TODO: Add Web implementation
       // https://stackoverflow.com/questions/57182634/how-can-i-read-and-write-files-in-flutter-web
       debugPrint("Error updating markers: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -232,6 +245,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           // On Android, the FAB is part of the Scaffold, but on iOS it's a
           // positioned widget inside the body. This Stack makes it work for both.
           if (Platform.isIOS) AdaptiveFab(onPressed: _centerOnUser),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
         ],
       ),
       floatingActionButton: !Platform.isIOS
