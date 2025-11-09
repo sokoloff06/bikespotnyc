@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:bikespotnyc/adaptive_details_body.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:map_launcher/map_launcher.dart';
@@ -12,6 +13,14 @@ class ParkingSpotDetails extends StatelessWidget {
   const ParkingSpotDetails({super.key, required this.parkingSpot});
 
   Future<void> _showMapSelection(BuildContext context) async {
+    FirebaseAnalytics.instance.logEvent(
+      name: 'navigation',
+      parameters: <String, Object>{
+        'borough': parkingSpot.borough,
+        'site_id': parkingSpot.siteId,
+      },
+    );
+
     final lat = parkingSpot.latitude;
     final lng = parkingSpot.longitude;
     final title = "Parking Spot: ${parkingSpot.siteId}";
@@ -82,6 +91,14 @@ class ParkingSpotDetails extends StatelessWidget {
     final body = AdaptiveDetailsBody(
       parkingSpot: parkingSpot,
       onNavigatePressed: () => _showMapSelection(context),
+    );
+
+    FirebaseAnalytics.instance.logEvent(
+      name: 'parking_details',
+      parameters: <String, Object>{
+        'borough': parkingSpot.borough,
+        'site_id': parkingSpot.siteId,
+      },
     );
 
     if (Platform.isIOS) {
