@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'parking_spot.dart';
+import 'rack_type.dart';
 
 class ApiService {
   static const String _dbName = 'parking_spots.db';
@@ -25,7 +26,12 @@ class ApiService {
     final Directory documentsDirectory =
         await getApplicationDocumentsDirectory();
     final String path = join(documentsDirectory.path, _dbName);
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+      path,
+      version: 3,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -33,10 +39,18 @@ class ApiService {
       CREATE TABLE $_tableName (
         site_id TEXT PRIMARY KEY,
         borough TEXT,
+        racktype TEXT,
         latitude REAL,
         longitude REAL
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    // This is a simple migration strategy suitable for a cache. If the schema
+    // changes, we drop the old table and create a new one.
+    await db.execute('DROP TABLE IF EXISTS $_tableName');
+    await _onCreate(db, newVersion);
   }
 
   Future<int> _getSpotCount() async {
@@ -113,6 +127,7 @@ class ApiService {
       batch.insert(_tableName, {
         'site_id': spot.siteId,
         'borough': spot.borough,
+        'racktype': spot.rackType.name,
         'latitude': spot.latitude,
         'longitude': spot.longitude,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -142,6 +157,7 @@ class ApiService {
       return ParkingSpot(
         siteId: maps[i]['site_id'],
         borough: maps[i]['borough'],
+        rackType: RackType.fromString(maps[i]['racktype'] ?? ''),
         latitude: maps[i]['latitude'],
         longitude: maps[i]['longitude'],
       );

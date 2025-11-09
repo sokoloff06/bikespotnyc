@@ -30,16 +30,21 @@ class AdaptiveDetailsBody extends StatelessWidget {
 
     final bodyStyle = Theme.of(context).textTheme.bodyLarge;
 
-    final imagePlaceholder = Container(
+    final imageWidget = Image.asset(
+      parkingSpot.rackType.imagePath,
       height: 200,
       width: double.infinity,
-      // Use theme-aware colors for better consistency
-      color: Theme.of(context).colorScheme.surfaceVariant,
-      child: Icon(
-        isIOS ? CupertinoIcons.photo : Icons.image,
-        size: 100,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        // Fallback in case the image fails to load
+        print(error);
+        return Container(
+          height: 200,
+          width: double.infinity,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          child: const Icon(Icons.image_not_supported, size: 100),
+        );
+      },
     );
 
     final navigateButton = isIOS
@@ -60,9 +65,14 @@ class AdaptiveDetailsBody extends StatelessWidget {
           children: [
             Text(parkingSpot.siteId, style: titleStyle),
             const SizedBox(height: 16),
-            imagePlaceholder,
+            imageWidget,
             const SizedBox(height: 16),
             Text('Borough: ${parkingSpot.borough}', style: bodyStyle),
+            const SizedBox(height: 8),
+            Text(
+              'Rack Type: ${parkingSpot.rackType.displayName}',
+              style: bodyStyle,
+            ),
             const SizedBox(height: 32),
             Center(child: navigateButton),
           ],
