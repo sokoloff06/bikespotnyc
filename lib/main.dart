@@ -13,11 +13,10 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  print(const String.fromEnvironment("MAPBOX_ACCESS_TOKEN"));
   // TODO: hide token
-  String accessToken = String.fromEnvironment("MAPBOX_ACCESS_TOKEN");
-  // MapboxOptions.setAccessToken(
-  //   "pk.eyJ1Ijoidmlzb2tvbG92IiwiYSI6ImNtaHJ5enh0ODBjYnQyanF6d3V1YWJnNngifQ.BHKojIdapZ8feUb4WUyXOg",
-  // );
+  const accessToken = String.fromEnvironment("MAPBOX_ACCESS_TOKEN");
+  MapboxOptions.setAccessToken(accessToken);
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -42,12 +41,9 @@ void main() async {
     pitch: 0,
   );
 
-  // Run your application, passing your CameraOptions to the MapWidget
-  runApp(MaterialApp(home: MapWidget(cameraOptions: camera)));
-
-  // runApp(
-  //   Provider<ApiService>(create: (_) => ApiService(), child: const MyApp()),
-  // );
+  runApp(
+    Provider<ApiService>(create: (_) => ApiService(), child: const MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {

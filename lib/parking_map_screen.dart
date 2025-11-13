@@ -8,6 +8,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
 import 'api_service.dart';
 import 'parking_spot_details.dart';
@@ -23,7 +24,7 @@ class ParkingMapScreen extends StatefulWidget {
 class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final ApiService _apiService = ApiService();
   final MapController _mapController = MapController();
-  final LatLng _nycCenter = LatLng(40.7128, -74.0060);
+  final mapbox.Position _nycCenter = mapbox.Position(-74.0060, 40.7128);
   List<Marker> _markers = [];
   Timer? _debounce;
   Position? _currentPosition;
@@ -154,76 +155,84 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mapWidget = FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        initialCenter: _nycCenter,
-        initialZoom: 12.0,
-        interactionOptions: InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
-        onMapReady: () {
-          print("Map is ready");
-          if (_debounce?.isActive ?? false) _debounce!.cancel();
-          _debounce = Timer(const Duration(milliseconds: 500), () {
-            _updateMarkers(_mapController.camera.visibleBounds);
-          });
-        },
-        onPositionChanged: (position, hasGesture) {
-          if (_debounce?.isActive ?? false) _debounce!.cancel();
-          _debounce = Timer(const Duration(milliseconds: 500), () {
-            _updateMarkers(position.visibleBounds);
-          });
-        },
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          subdomains: const ['a', 'b', 'c'],
-        ),
-        MarkerClusterLayerWidget(
-          options: MarkerClusterLayerOptions(
-            maxClusterRadius: 100,
-            maxZoom: 21,
-            size: const Size(40, 40),
-            spiderfyCluster: false,
-            markers: _markers,
-            builder: (context, markers) {
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.blue,
-                ),
-                child: Center(
-                  child: Text(
-                    markers.length.toString(),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        if (_currentPosition != null)
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 80,
-                height: 80,
-                point: LatLng(
-                  _currentPosition!.latitude,
-                  _currentPosition!.longitude,
-                ),
-                child: const Icon(
-                  Icons.my_location,
-                  color: Colors.blueAccent,
-                  size: 40.0,
-                ),
-              ),
-            ],
-          ),
-      ],
+    // Define options for your camera
+    mapbox.CameraOptions camera = mapbox.CameraOptions(
+      center: mapbox.Point(coordinates: _nycCenter),
+      zoom: 12,
+      bearing: 0,
+      pitch: 0,
     );
+    final mapWidget = mapbox.MapWidget(cameraOptions: camera);
+    // final mapWidget = FlutterMap(
+    //   mapController: _mapController,
+    //   options: MapOptions(
+    //     initialCenter: _nycCenter,
+    //     initialZoom: 12.0,
+    //     interactionOptions: InteractionOptions(
+    //       flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+    //     ),
+    //     onMapReady: () {
+    //       print("Map is ready");
+    //       if (_debounce?.isActive ?? false) _debounce!.cancel();
+    //       _debounce = Timer(const Duration(milliseconds: 500), () {
+    //         _updateMarkers(_mapController.camera.visibleBounds);
+    //       });
+    //     },
+    //     onPositionChanged: (position, hasGesture) {
+    //       if (_debounce?.isActive ?? false) _debounce!.cancel();
+    //       _debounce = Timer(const Duration(milliseconds: 500), () {
+    //         _updateMarkers(position.visibleBounds);
+    //       });
+    //     },
+    //   ),
+    //   children: [
+    //     TileLayer(
+    //       urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    //       subdomains: const ['a', 'b', 'c'],
+    //     ),
+    //     MarkerClusterLayerWidget(
+    //       options: MarkerClusterLayerOptions(
+    //         maxClusterRadius: 100,
+    //         maxZoom: 21,
+    //         size: const Size(40, 40),
+    //         spiderfyCluster: false,
+    //         markers: _markers,
+    //         builder: (context, markers) {
+    //           return Container(
+    //             decoration: BoxDecoration(
+    //               borderRadius: BorderRadius.circular(20),
+    //               color: Colors.blue,
+    //             ),
+    //             child: Center(
+    //               child: Text(
+    //                 markers.length.toString(),
+    //                 style: const TextStyle(color: Colors.white),
+    //               ),
+    //             ),
+    //           );
+    //         },
+    //       ),
+    //     ),
+    //     if (_currentPosition != null)
+    //       MarkerLayer(
+    //         markers: [
+    //           Marker(
+    //             width: 80,
+    //             height: 80,
+    //             point: LatLng(
+    //               _currentPosition!.latitude,
+    //               _currentPosition!.longitude,
+    //             ),
+    //             child: const Icon(
+    //               Icons.my_location,
+    //               color: Colors.blueAccent,
+    //               size: 40.0,
+    //             ),
+    //           ),
+    //         ],
+    //       ),
+    //   ],
+    // );
 
     return Scaffold(
       body: Stack(
