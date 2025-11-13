@@ -27,15 +27,6 @@ void main() async {
     // TODO: Investigate
     print("Second main() run");
   }
-
-  // Define options for your camera
-  CameraOptions camera = CameraOptions(
-    center: Point(coordinates: Position(-98.0, 39.5)),
-    zoom: 2,
-    bearing: 0,
-    pitch: 0,
-  );
-
   runApp(
     Provider<ApiService>(create: (_) => ApiService(), child: const MyApp()),
   );
