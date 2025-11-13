@@ -162,6 +162,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       bearing: 0,
       pitch: 0,
     );
+    const accessToken = String.fromEnvironment("MAPBOX_ACCESS_TOKEN");
+    mapbox.MapboxOptions.setAccessToken(accessToken);
     final mapWidget = mapbox.MapWidget(cameraOptions: camera);
     // final mapWidget = FlutterMap(
     //   mapController: _mapController,

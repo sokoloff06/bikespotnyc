@@ -9,14 +9,9 @@ import 'package:provider/provider.dart';
 
 import 'api_service.dart';
 import 'firebase_options.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  print(const String.fromEnvironment("MAPBOX_ACCESS_TOKEN"));
-  // TODO: hide token
-  const accessToken = String.fromEnvironment("MAPBOX_ACCESS_TOKEN");
-  MapboxOptions.setAccessToken(accessToken);
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
