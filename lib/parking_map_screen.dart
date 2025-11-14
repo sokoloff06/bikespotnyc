@@ -280,8 +280,6 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     });
   }
 
-  bool _isLoading = false;
-
   Widget _buildLoadingIndicator() {
     return Visibility(visible: _isLoading, child: _buildLoading());
   }
