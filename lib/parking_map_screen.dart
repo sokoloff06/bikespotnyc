@@ -24,6 +24,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   mapbox.MapboxMap? _mapboxMap;
   final mapbox.Position _nycCenter = mapbox.Position(-74.0060, 40.7128);
   Position? _currentPosition;
+  bool _isLoading = true;
   StreamSubscription<Position>? _positionStreamSubscription;
 
   @override
