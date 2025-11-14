@@ -172,7 +172,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     );
     await _mapboxMap!.style.addLayer(
       mapbox.CircleLayer(
-        id: "spots_clusters",
+        id: "spots-cluster",
         sourceId: "spots",
         filter: ['has', 'point_count'],
         circleColorExpression: [
@@ -234,6 +234,41 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         },
       ),
       interactionID: "single-spot-tap",
+    );
+    _mapboxMap!.addInteraction(
+      mapbox.TapInteraction(
+        mapbox.FeaturesetDescriptor(layerId: 'spots-cluster'),
+        (feature, context) async {
+          var currentCamera = _mapboxMap!.getCameraState();
+          var currentZoom = await currentCamera.then((value) => value.zoom);
+          // Handle tap when a feature
+          // from "polygons" is tapped.
+          final properties = feature.properties;
+          final pointCount = properties['point_count'] as int?;
+          if (pointCount != null && pointCount > 0) {
+            final geometry = feature.geometry as Map<String?, Object?>?;
+
+            final coordinates = geometry?['coordinates'] as List?;
+            final longitude = coordinates?.first as double?;
+            final latitude = coordinates?.last as double?;
+
+            if (latitude == null || longitude == null) {
+              return;
+            }
+
+            _mapboxMap?.flyTo(
+              mapbox.CameraOptions(
+                center: mapbox.Point(
+                  coordinates: mapbox.Position(longitude, latitude),
+                ),
+                zoom: currentZoom + 3,
+              ),
+              null,
+            );
+          }
+        },
+      ),
+      interactionID: "spots-cluster-tap",
     );
   }
 }
