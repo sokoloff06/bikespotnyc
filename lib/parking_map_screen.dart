@@ -23,7 +23,6 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final ApiService _apiService = ApiService();
   mapbox.MapboxMap? _mapboxMap;
   final mapbox.Position _nycCenter = mapbox.Position(-74.0060, 40.7128);
-  bool _locationInitialized = false;
   Position? _currentPosition;
   StreamSubscription<Position>? _positionStreamSubscription;
 
@@ -69,7 +68,6 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       if (mounted) {
         setState(() {
           _currentPosition = position;
-          _locationInitialized = true;
         });
       }
     } catch (e) {
@@ -156,6 +154,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         children: [
           mapWidget,
           if (Platform.isIOS) AdaptiveFab(onPressed: _centerOnUser),
+          _buildLoadingIndicator(),
         ],
       ),
       floatingActionButton: !Platform.isIOS
@@ -165,8 +164,12 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
   }
 
   void loadMarkers() async {
-    //TODO: leverage ApiService
-    var data = await rootBundle.loadString('assets/spots.geojson');
+    setState(() {
+      // Show loading indicator
+      _isLoading = true;
+    });
+
+    var data = await _apiService.getGeoJson();
     await _mapboxMap!.style.addSource(
       mapbox.GeoJsonSource(id: "spots", data: data, cluster: true),
     );
@@ -269,6 +272,25 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         },
       ),
       interactionID: "spots-cluster-tap",
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  bool _isLoading = false;
+
+  Widget _buildLoadingIndicator() {
+    return Visibility(visible: _isLoading, child: _buildLoading());
+  }
+
+  Widget _buildLoading() {
+    return Stack(
+      children: [
+        ModalBarrier(color: Colors.black.withOpacity(0.5), dismissible: false),
+        const Center(child: CircularProgressIndicator()),
+      ],
     );
   }
 }
