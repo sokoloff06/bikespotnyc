@@ -1,13 +1,10 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:bikespotnyc/adaptive_fab.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Element;
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
 import 'api_service.dart';
 import 'parking_spot_details.dart';
@@ -22,10 +19,8 @@ class ParkingMapScreen extends StatefulWidget {
 
 class _ParkingMapScreenState extends State<ParkingMapScreen> {
   final ApiService _apiService = ApiService();
-  final MapController _mapController = MapController();
-  final LatLng _nycCenter = LatLng(40.7128, -74.0060);
-  List<Marker> _markers = [];
-  Timer? _debounce;
+  mapbox.MapboxMap? _mapboxMap;
+  final mapbox.Position _nycCenter = mapbox.Position(-74.0060, 40.7128);
   Position? _currentPosition;
   bool _isLoading = true;
   StreamSubscription<Position>? _positionStreamSubscription;
@@ -38,8 +33,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
-    _mapController.dispose();
+    _mapboxMap?.dispose();
     _positionStreamSubscription?.cancel();
     super.dispose();
   }
@@ -92,10 +86,17 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   void _centerOnUser() {
     if (_currentPosition != null) {
-      _mapController.move(
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-        17.0,
-        // _mapController.camera.zoom,
+      _mapboxMap?.flyTo(
+        mapbox.CameraOptions(
+          center: mapbox.Point(
+            coordinates: mapbox.Position(
+              _currentPosition!.longitude,
+              _currentPosition!.latitude,
+            ),
+          ),
+          zoom: 17.0,
+        ),
+        null,
       );
     }
   }
@@ -111,150 +112,197 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     Navigator.push(context, route);
   }
 
-  Future<void> _updateMarkers(LatLngBounds? bounds) async {
-    if (bounds == null) return;
-
-    if (mounted && !_isLoading) {
-      setState(() {
-        _isLoading = true;
-      });
-    }
-
-    try {
-      final spots = await _apiService.getSpotsInBounds(
-        bounds.south,
-        bounds.north,
-        bounds.west,
-        bounds.east,
+  Future<void> _onMapCreated(mapbox.MapboxMap mapboxMap) async {
+    _mapboxMap = mapboxMap;
+    mapboxMap.attribution.updateSettings(
+      mapbox.AttributionSettings(enabled: false),
+    );
+    _mapboxMap!.scaleBar.updateSettings(
+      mapbox.ScaleBarSettings(enabled: false),
+    );
+    if (Platform.isAndroid) {
+      _mapboxMap!.compass.updateSettings(
+        mapbox.CompassSettings(marginTop: 100),
       );
-
-      final markers = spots
-          .map(
-            (spot) => Marker(
-              point: LatLng(spot.latitude, spot.longitude),
-              width: 30.0,
-              height: 30.0,
-              child: GestureDetector(
-                onTap: () => _navigateToDetails(spot),
-                child: const Icon(
-                  Icons.location_pin,
-                  color: Colors.red,
-                  size: 30.0,
-                ),
-              ),
-            ),
-          )
-          .toList();
-
-      if (mounted) {
-        setState(() {
-          print("Markers added");
-          _markers = markers;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      // TODO: Add Web implementation
-      // https://stackoverflow.com/questions/57182634/how-can-i-read-and-write-files-in-flutter-web
-      debugPrint("Error updating markers: $e");
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
+    _mapboxMap?.location.updateSettings(
+      mapbox.LocationComponentSettings(
+        enabled: true,
+        pulsingEnabled: true,
+        showAccuracyRing: true,
+      ),
+    );
+    loadMarkers();
+  }
+
+  Future<void> _onMapIdle(mapbox.MapIdleEventData eventData) async {
+    print("Map Idle");
   }
 
   @override
   Widget build(BuildContext context) {
-    final mapWidget = FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        initialCenter: _nycCenter,
-        initialZoom: 12.0,
-        interactionOptions: InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
-        onMapReady: () {
-          print("Map is ready");
-          if (_debounce?.isActive ?? false) _debounce!.cancel();
-          _debounce = Timer(const Duration(milliseconds: 500), () {
-            _updateMarkers(_mapController.camera.visibleBounds);
-          });
-        },
-        onPositionChanged: (position, hasGesture) {
-          if (_debounce?.isActive ?? false) _debounce!.cancel();
-          _debounce = Timer(const Duration(milliseconds: 500), () {
-            _updateMarkers(position.visibleBounds);
-          });
-        },
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          subdomains: const ['a', 'b', 'c'],
-        ),
-        MarkerClusterLayerWidget(
-          options: MarkerClusterLayerOptions(
-            maxClusterRadius: 100,
-            maxZoom: 21,
-            size: const Size(40, 40),
-            spiderfyCluster: false,
-            markers: _markers,
-            builder: (context, markers) {
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.blue,
-                ),
-                child: Center(
-                  child: Text(
-                    markers.length.toString(),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        if (_currentPosition != null)
-          MarkerLayer(
-            markers: [
-              Marker(
-                width: 80,
-                height: 80,
-                point: LatLng(
-                  _currentPosition!.latitude,
-                  _currentPosition!.longitude,
-                ),
-                child: const Icon(
-                  Icons.my_location,
-                  color: Colors.blueAccent,
-                  size: 40.0,
-                ),
-              ),
-            ],
-          ),
-      ],
+    const accessToken = String.fromEnvironment("MAPBOX_ACCESS_TOKEN");
+    mapbox.MapboxOptions.setAccessToken(accessToken);
+
+    final initialCamera = mapbox.CameraOptions(
+      center: mapbox.Point(coordinates: _nycCenter),
+      zoom: 12.0,
+    );
+
+    final mapWidget = mapbox.MapWidget(
+      key: const ValueKey("mapboxMap"),
+      cameraOptions: initialCamera,
+      styleUri: mapbox.MapboxStyles.MAPBOX_STREETS,
+      onMapCreated: _onMapCreated,
+      onMapIdleListener: _onMapIdle,
     );
 
     return Scaffold(
       body: Stack(
         children: [
           mapWidget,
-          // On Android, the FAB is part of the Scaffold, but on iOS it's a
-          // positioned widget inside the body. This Stack makes it work for both.
           if (Platform.isIOS) AdaptiveFab(onPressed: _centerOnUser),
-          if (_isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: const Center(child: CircularProgressIndicator()),
-            ),
+          _buildLoadingIndicator(),
         ],
       ),
       floatingActionButton: !Platform.isIOS
           ? AdaptiveFab(onPressed: _centerOnUser)
           : null,
+    );
+  }
+
+  void loadMarkers() async {
+    setState(() {
+      // Show loading indicator
+      _isLoading = true;
+    });
+
+    var data = await _apiService.getGeoJson();
+    await _mapboxMap!.style.addSource(
+      mapbox.GeoJsonSource(id: "spots", data: data, cluster: true),
+    );
+    await _mapboxMap!.style.addLayer(
+      mapbox.CircleLayer(
+        id: "spots-cluster",
+        sourceId: "spots",
+        filter: ['has', 'point_count'],
+        circleColorExpression: [
+          'step',
+          ['get', 'point_count'],
+          '#B4E1D7',
+          100,
+          '#82C3C0',
+          750,
+          '#4D8EA6',
+        ],
+        circleRadiusExpression: [
+          'step',
+          ['get', 'point_count'],
+          20,
+          100,
+          30,
+          750,
+          40,
+        ],
+      ),
+    );
+
+    // Cluster count symbol
+    await _mapboxMap!.style.addLayer(
+      mapbox.SymbolLayer(
+        id: 'spots-count',
+        sourceId: 'spots',
+        filter: ['has', 'point_count'],
+        textFieldExpression: ['get', 'point_count'],
+        textFont: ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+        textSize: 12,
+      ),
+    );
+    // Unclustered points
+    await _mapboxMap!.style.addLayer(
+      mapbox.CircleLayer(
+        id: 'spots-singles',
+        sourceId: 'spots',
+        filter: [
+          '!',
+          ['has', 'point_count'],
+        ],
+        circleColor: Colors.blue.toARGB32(),
+        circleRadius: 8,
+        circleStrokeWidth: 1,
+        circleStrokeColor: Colors.black.toARGB32(),
+      ),
+    );
+    _mapboxMap!.addInteraction(
+      mapbox.TapInteraction(
+        mapbox.FeaturesetDescriptor(layerId: 'spots-singles'),
+        (feature, context) {
+          // Handle tap when a feature
+          // from "polygons" is tapped.
+          final properties = feature.properties;
+          final parkingSpot = ParkingSpot.fromJson(properties);
+          _navigateToDetails(parkingSpot);
+        },
+      ),
+      interactionID: "single-spot-tap",
+    );
+    _mapboxMap!.addInteraction(
+      mapbox.TapInteraction(
+        mapbox.FeaturesetDescriptor(layerId: 'spots-cluster'),
+        (feature, context) async {
+          var currentCamera = _mapboxMap!.getCameraState();
+          var currentZoom = await currentCamera.then((value) => value.zoom);
+          // Handle tap when a feature
+          // from "polygons" is tapped.
+          final properties = feature.properties;
+          final pointCount = properties['point_count'];
+          int? intPointCount;
+          if (pointCount is int) {
+            intPointCount = pointCount;
+          } else if (pointCount is double) {
+            intPointCount = (pointCount).toInt();
+          }
+          if (intPointCount != null && intPointCount > 0) {
+            final geometry = feature.geometry as Map<String?, Object?>?;
+
+            final coordinates = geometry?['coordinates'] as List?;
+            final longitude = coordinates?.first as double?;
+            final latitude = coordinates?.last as double?;
+
+            if (latitude == null || longitude == null) {
+              return;
+            }
+
+            _mapboxMap?.flyTo(
+              mapbox.CameraOptions(
+                center: mapbox.Point(
+                  coordinates: mapbox.Position(longitude, latitude),
+                ),
+                zoom: currentZoom + 3,
+              ),
+              null,
+            );
+          }
+        },
+      ),
+      interactionID: "spots-cluster-tap",
+    );
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Visibility(visible: _isLoading, child: _buildLoading());
+  }
+
+  Widget _buildLoading() {
+    return Stack(
+      children: [
+        ModalBarrier(color: Colors.black.withOpacity(0.5), dismissible: false),
+        const Center(child: CircularProgressIndicator()),
+      ],
     );
   }
 }
