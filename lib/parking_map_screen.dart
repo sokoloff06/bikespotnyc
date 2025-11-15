@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:bikespotnyc/adaptive_fab.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' hide Element;
@@ -116,17 +114,17 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   Future<void> _onMapCreated(mapbox.MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
-    final ByteData bytes = await rootBundle.load('assets/bike_icon.png');
-    final Uint8List list = bytes.buffer.asUint8List();
-    _mapboxMap!.style.addStyleImage(
-      'bikeImage',
-      15,
-      mapbox.MbxImage(width: 10, height: 10, data: list),
-      false,
-      [],
-      [],
-      null,
+    mapboxMap.attribution.updateSettings(
+      mapbox.AttributionSettings(enabled: false),
     );
+    _mapboxMap!.scaleBar.updateSettings(
+      mapbox.ScaleBarSettings(enabled: false),
+    );
+    if (Platform.isAndroid) {
+      _mapboxMap!.compass.updateSettings(
+        mapbox.CompassSettings(marginTop: 100),
+      );
+    }
     _mapboxMap?.location.updateSettings(
       mapbox.LocationComponentSettings(
         enabled: true,
@@ -191,11 +189,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         circleColorExpression: [
           'step',
           ['get', 'point_count'],
-          '#51bbd6',
+          '#B4E1D7',
           100,
-          '#f1f075',
+          '#82C3C0',
           750,
-          '#f28cb1',
+          '#4D8EA6',
         ],
         circleRadiusExpression: [
           'step',
@@ -222,18 +220,17 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     );
     // Unclustered points
     await _mapboxMap!.style.addLayer(
-      mapbox.SymbolLayer(
+      mapbox.CircleLayer(
         id: 'spots-singles',
         sourceId: 'spots',
         filter: [
           '!',
           ['has', 'point_count'],
         ],
-        iconImage: 'bikeImage',
-        // circleColor: 0xFF000000,
-        // circleRadius: 7,
-        // circleStrokeWidth: 1,
-        // circleStrokeColor: 0xFFFF,
+        circleColor: Colors.blue.toARGB32(),
+        circleRadius: 8,
+        circleStrokeWidth: 1,
+        circleStrokeColor: Colors.black.toARGB32(),
       ),
     );
     _mapboxMap!.addInteraction(
@@ -258,8 +255,14 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           // Handle tap when a feature
           // from "polygons" is tapped.
           final properties = feature.properties;
-          final pointCount = properties['point_count'] as double?;
-          if (pointCount != null && pointCount > 0) {
+          final pointCount = properties['point_count'];
+          int? intPointCount;
+          if (pointCount is int) {
+            intPointCount = pointCount;
+          } else if (pointCount is double) {
+            intPointCount = (pointCount).toInt();
+          }
+          if (intPointCount != null && intPointCount > 0) {
             final geometry = feature.geometry as Map<String?, Object?>?;
 
             final coordinates = geometry?['coordinates'] as List?;

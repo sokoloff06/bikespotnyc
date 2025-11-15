@@ -12,7 +12,7 @@ class AdaptiveFab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (Platform.isIOS) {
       return Positioned(
-        bottom: 100, // Adjust for status bar
+        bottom: 50, // Adjust for status bar
         right: 15,
         child: CupertinoButton(
           color: CupertinoColors.white.withOpacity(0.8),
