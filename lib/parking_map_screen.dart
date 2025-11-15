@@ -118,6 +118,15 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     _mapboxMap = mapboxMap;
     final ByteData bytes = await rootBundle.load('assets/bike_icon.png');
     final Uint8List list = bytes.buffer.asUint8List();
+    _mapboxMap!.style.addStyleImage(
+      'bikeImage',
+      15,
+      mapbox.MbxImage(width: 10, height: 10, data: list),
+      false,
+      [],
+      [],
+      null,
+    );
     _mapboxMap?.location.updateSettings(
       mapbox.LocationComponentSettings(
         enabled: true,
@@ -213,17 +222,18 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     );
     // Unclustered points
     await _mapboxMap!.style.addLayer(
-      mapbox.CircleLayer(
+      mapbox.SymbolLayer(
         id: 'spots-singles',
         sourceId: 'spots',
         filter: [
           '!',
           ['has', 'point_count'],
         ],
-        circleColor: 0xFF000000,
-        circleRadius: 7,
-        circleStrokeWidth: 1,
-        circleStrokeColor: 0xFFFF,
+        iconImage: 'bikeImage',
+        // circleColor: 0xFF000000,
+        // circleRadius: 7,
+        // circleStrokeWidth: 1,
+        // circleStrokeColor: 0xFFFF,
       ),
     );
     _mapboxMap!.addInteraction(
@@ -248,7 +258,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           // Handle tap when a feature
           // from "polygons" is tapped.
           final properties = feature.properties;
-          final pointCount = properties['point_count'] as int?;
+          final pointCount = properties['point_count'] as double?;
           if (pointCount != null && pointCount > 0) {
             final geometry = feature.geometry as Map<String?, Object?>?;
 
