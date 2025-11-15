@@ -229,8 +229,18 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         ],
         circleColor: Colors.blue.toARGB32(),
         circleRadius: 8,
-        circleStrokeWidth: 1,
-        circleStrokeColor: Colors.black.toARGB32(),
+        circleStrokeWidth: 2,
+        circleStrokeColor: const Color.fromARGB(255, 0, 0, 0).toARGB32(),
+      ),
+    );
+    _mapboxMap!.gestures.updateSettings(
+      mapbox.GesturesSettings(
+        rotateEnabled: false,
+        doubleTapToZoomInEnabled: false,
+        doubleTouchToZoomOutEnabled: false,
+        quickZoomEnabled: false,
+        pitchEnabled: false,
+        pinchPanEnabled: false,
       ),
     );
     _mapboxMap!.addInteraction(
@@ -250,6 +260,18 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       mapbox.TapInteraction(
         mapbox.FeaturesetDescriptor(layerId: 'spots-cluster'),
         (feature, context) async {
+          var layer =
+              await _mapboxMap!.style.getLayer('spots-cluster')
+                  as mapbox.CircleLayer;
+          layer.circleOpacityExpression = [
+            'match',
+            ['get', 'cluster_id'],
+            ?feature.properties['cluster_id'],
+            0.5,
+            1,
+          ];
+          _mapboxMap!.style.updateLayer(layer);
+
           var currentCamera = _mapboxMap!.getCameraState();
           var currentZoom = await currentCamera.then((value) => value.zoom);
           // Handle tap when a feature
@@ -283,6 +305,16 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               null,
             );
           }
+          Future.delayed(const Duration(milliseconds: 500), () {
+            layer.circleOpacityExpression = [
+              'match',
+              ['get', 'cluster_id'],
+              ?feature.properties['cluster_id'],
+              1,
+              1,
+            ];
+            _mapboxMap!.style.updateLayer(layer);
+          });
         },
       ),
       interactionID: "spots-cluster-tap",
