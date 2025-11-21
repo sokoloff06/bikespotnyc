@@ -7,6 +7,7 @@ on:
     paths:
       - 'android/**'
       - 'lib/**'
+      - '.github/**'
   pull_request:
     branches:
       - master # Trigger on pull requests to the main branch
