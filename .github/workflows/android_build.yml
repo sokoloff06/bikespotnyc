@@ -8,6 +8,7 @@ on:
       - 'android/**'
       - 'lib/**'
       - '.github/**'
+      - 'pubspec.yaml'
   pull_request:
     branches:
       - master # Trigger on pull requests to the main branch
