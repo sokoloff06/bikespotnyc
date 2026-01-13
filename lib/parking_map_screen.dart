@@ -177,7 +177,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       _isLoading = true;
     });
 
-    var data = await _apiService.getGeoJson();
+    var data = await _apiService.getGeoJsonUri();
     await _mapboxMap!.style.addSource(
       mapbox.GeoJsonSource(id: "spots", data: data, cluster: true),
     );

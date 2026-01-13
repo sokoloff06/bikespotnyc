@@ -47,10 +47,10 @@ class ApiService {
     return geojsonFile;
   }
 
-  Future<String> getGeoJson() async {
+  Future<String> getGeoJsonUri() async {
     await _initializeAndCacheSpots();
     final geojsonFile = await getGeoJsonFile();
-    return await geojsonFile.readAsString();
+    return geojsonFile.uri.toString();
   }
 
   Future<void> clearLocalData() async {
