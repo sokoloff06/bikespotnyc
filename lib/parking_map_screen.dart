@@ -73,15 +73,18 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       debugPrint("Error getting current position: $e");
     }
 
-    _positionStreamSubscription = Geolocator.getPositionStream().listen((
-      position,
-    ) {
-      if (mounted) {
-        setState(() {
-          _currentPosition = position;
-        });
-      }
-    });
+    _positionStreamSubscription = Geolocator.getPositionStream().listen(
+      (position) {
+        if (mounted) {
+          setState(() {
+            _currentPosition = position;
+          });
+        }
+      },
+      onError: (e) {
+        debugPrint("Error receiving location update: $e");
+      },
+    );
   }
 
   void _centerOnUser() {
